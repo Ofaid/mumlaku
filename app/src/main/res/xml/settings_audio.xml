@@ -89,11 +89,11 @@
             android:title="@string/hidePtt"
             app:iconSpaceReserved="false"/>
         <CheckBoxPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="togglePtt"
             android:summary="@string/togglePttSum"
             android:title="@string/togglePtt"
-            app:iconSpaceReserved="false"/>
+            app:iconSpaceReserved="true"/>
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="half_duplex"
