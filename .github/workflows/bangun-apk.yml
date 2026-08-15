@@ -50,9 +50,10 @@ jobs:
 
       - name: ✅ Bangun APK utama — BERSIH & BARU
         run: ./gradlew assembleDebug --stacktrace --no-daemon
-
       - name: Simpan hasil APK
         uses: actions/upload-artifact@v4
         with:
           name: Mumla-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/*.apk"
+
+      
