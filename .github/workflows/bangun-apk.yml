@@ -23,7 +23,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           ndk-version: '25.1.8937393'
-          install-ndk: true  # ← INI YANG KURANG! TANPA INI NDK TIDAK DIPASANG!
+          install-ndk: true  # ← KUNCI NYA!
 
       - name: Tulis lokasi SDK
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
