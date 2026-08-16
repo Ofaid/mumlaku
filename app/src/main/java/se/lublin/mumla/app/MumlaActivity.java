@@ -139,6 +139,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
     private Visualizer mVisualizer;
+	
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
 
@@ -840,28 +841,51 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     }
 
     private void setupAudioVisualizer() {
-        if (mVisualizer != null) {
-            mVisualizer.release();
+    if (mVisualizer != null) {
+        mVisualizer.release();
+        mVisualizer = null;
+    }
+    try {
+        // Sesi audio 0 = seluruh suara keluaran perangkat
+        mVisualizer = new Visualizer(0);
+
+        // Cek ukuran penangkapan data yang didukung
+        int[] range = Visualizer.getCaptureSizeRange();
+        if (range.length == 0) {
+            Log.e(TAG, "❌ Perangkat tidak mendukung Visualizer");
+            return;
         }
-        try {
-            mVisualizer = new Visualizer(0);
-            mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
-            mVisualizer.setDataCaptureListener(
-                new Visualizer.OnDataCaptureListener() {
-                    @Override
-                    public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
-                        if (mVisualizerView != null) {
-                            mVisualizerView.updateVisualizer(waveform);
-                        }
+        int captureSize = range[1]; // Pakai ukuran maksimal
+        mVisualizer.setCaptureSize(captureSize);
+
+        // Pasang pendengar data
+        mVisualizer.setDataCaptureListener(
+            new Visualizer.OnDataCaptureListener() {
+                @Override
+                public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
+                    if (mVisualizerView != null) {
+                        mVisualizerView.updateVisualizer(waveform);
+                        Log.d(TAG, "📡 Dapat data: " + waveform.length + " byte");
                     }
-                    @Override
-                    public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
-                },
-                Visualizer.getMaxCaptureRate() / 2, true, false
-            );
-            mVisualizer.setEnabled(true);
-        } catch (Exception e) {
-            Log.e(TAG, "Gagal menyiapkan visualizer", e);
-        }
+                }
+                @Override
+                public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
+            },
+            Visualizer.getMaxCaptureRate() / 2, // Kecepatan tangkap
+            true, // Ambil data bentuk gelombang
+            false // Tidak ambil data frekuensi
+        );
+
+        mVisualizer.setEnabled(true); // Nyalakan
+        Log.i(TAG, "✅ Visualizer siap berjalan!");
+
+    } catch (SecurityException e) {
+        Log.e(TAG, "❌ Tidak ada izin merekam audio", e);
+    } catch (Exception e) {
+        Log.e(TAG, "❌ Gagal menyiapkan visualizer", e);
+    }
+}
+
+
     }
 }
