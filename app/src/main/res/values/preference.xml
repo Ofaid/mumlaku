@@ -18,8 +18,8 @@
   -->
 
 <resources>
-    <string name="inputMethodVoice">Voice activity</string>
-    <string name="inputMethodPtt">Push-to-talk</string>
+    <string name="inputMethodVoice">Push-to-talk</string>
+    <string name="inputMethodPtt">Voice activity</string>
     <string name="inputMethodContinuous">Continuous</string>
 
     <!-- Theme names -->
