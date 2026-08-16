@@ -884,8 +884,5 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     } catch (Exception e) {
         Log.e(TAG, "❌ Gagal menyiapkan visualizer", e);
     }
-}
-
-
-    }
+}  
 }
