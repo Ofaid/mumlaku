@@ -266,6 +266,12 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+    WebView webView = findViewById(R.id.webViewVisualizer);
+    WebSettings pengaturan = webView.getSettings();
+    pengaturan.setJavaScriptEnabled(true);
+    pengaturan.setAllowFileAccess(true);
+    webView.loadUrl("file:///android_asset/visualizer-bersih.html");
+
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
