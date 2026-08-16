@@ -28,7 +28,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.media.AudioManager;
-import android.media.Visualizer;
+import android.media.audiofx.Visualizer;  // ✅ BENAR — ini tempatnya!
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
