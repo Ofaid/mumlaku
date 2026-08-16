@@ -110,6 +110,9 @@ import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
+import se.lublin.mumla.app.NeonVisualizerView;
+import android.media.Visualizer;
+
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
         FavouriteServerListFragment.ServerConnectHandler, HumlaServiceProvider, DatabaseProvider,
@@ -137,6 +140,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
+    private NeonVisualizerView mVisualizerView;
+    private Visualizer mVisualizer;
 
     /**
      * List of fragments to be notified about service state changes.
@@ -268,6 +273,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+     mVisualizerView = findViewById(R.id.visualizer_view);
+     setupAudioVisualizer();
 
     WebView webView = findViewById(R.id.webViewVisualizer);
     WebSettings pengaturan = webView.getSettings();
@@ -428,13 +435,29 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         unbindService(mConnection);
     }
 
-    @Override
+   /* @Override
     protected void onDestroy() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.unregisterOnSharedPreferenceChangeListener(this);
         mDatabase.close();
         super.onDestroy();
     }
+*/
+@Override
+protected void onDestroy() {
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    preferences.unregisterOnSharedPreferenceChangeListener(this);
+    mDatabase.close();
+
+    // ✅ === TAMBAHKAN 3 BARIS INI DI SINI ===
+    if (mVisualizer != null) {
+        mVisualizer.release();
+        mVisualizer = null;
+    }
+
+    super.onDestroy();
+}
+
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -895,4 +918,41 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 break;
         }
     }
+    
+    
+        @Override
+    public void onServerEdited(ServerEditFragment.Action action, Server server) {
+        ...
+    }
+
+    // ✅ === TARUH FUNGSI INI DI SINI — DI ATAS KURUNG PENUTUP KELAS ===
+    private void setupAudioVisualizer() {
+        if (mVisualizer != null) {
+            mVisualizer.release();
+        }
+        try {
+            mVisualizer = new Visualizer(0);
+            mVisualizer.setCaptureSize(Visualizer.getCaptureSizeRange()[1]);
+            mVisualizer.setDataCaptureListener(
+                new Visualizer.OnDataCaptureListener() {
+                    @Override
+                    public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
+                        if (mVisualizerView != null) {
+                            mVisualizerView.updateVisualizer(waveform);
+                        }
+                    }
+                    @Override
+                    public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
+                },
+                Visualizer.getMaxCaptureRate() / 2, true, false
+            );
+            mVisualizer.setEnabled(true);
+        } catch (Exception e) {
+            Log.e(TAG, "Gagal menyiapkan visualizer", e);
+        }
+    }
+    // ✅ === SAMPAI SINI ===
+
+} // ← INI KURUNG PENUTUP KELAS
+
 }
