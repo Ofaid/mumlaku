@@ -78,9 +78,9 @@
     <string name="online">Online</string>
     <string name="offline">Offline</string>
     <string name="clearChat">Bersihkan Chat</string>
-    <string name="mumlaConnected">OFA Mumla tersambung</string>
-    <string name="mumlaConnecting">OFA Mumla sedang menyambungkan…</string>
-    <string name="mumlaDisconnected">OFA Mumla terputus</string>
+    <string name="mumlaConnected">Mumla tersambung</string>
+    <string name="mumlaConnecting">Mumla sedang menyambungkan…</string>
+    <string name="mumlaDisconnected">Mumla terputus</string>
     <string name="channel">Channel</string>
     <string name="user">User</string>
     <string name="sort">Sortir</string>
@@ -98,7 +98,7 @@
     <string name="channel_add">Tambah Channel</string>
     <string name="tts_failed">Tidak dapat memulai TTS</string>
     <string name="mumble_url_parse_failed">URL Mumble tidak valid.</string>
-    <string name="first_run_generate_certificate_title">Selamat datang di OFA Mumla</string>
+    <string name="first_run_generate_certificate_title">Selamat datang di Mumla</string>
     <string name="generate">Buat</string>
     <string name="invalid_password">Password salah.</string>
     <string name="send_message">Kirim pesan</string>
@@ -146,7 +146,7 @@
     <string name="server_match_found">Server berhasil ditemukan</string>
     <string name="server_match_expand_country">Tidak dapat menemukan server optimal di negara anda. Cari server di luar negeri?</string>
     <string name="confirm_delete_server">Apakah anda yakin ingin menghapus server ini?</string>
-    <string name="server_match_description">OFA Mumla dapat secara otomatis mencarikan anda server kosong yang teroptimisasi sesuai dengan lokasi, versi, dan latensi.</string>
+    <string name="server_match_description">Mumla dapat secara otomatis mencarikan anda server kosong yang teroptimisasi sesuai dengan lokasi, versi, dan latensi.</string>
     <string name="no_ptt_key">Tidak ada tombol</string>
     <string name="accessAdd">Tambah Token Akses</string>
     <string name="bluetooth">Bluetooth</string>
@@ -158,7 +158,7 @@
     <string name="name">Nama</string>
     <string name="close">Tutup</string>
     <string name="status_notify_muted">Mikrofon berhasil dimatikan.</string>
-    <string name="shareMessage">Bergabunglah ke server Mumble ini dengan OFA Mumla. %s</string>
+    <string name="shareMessage">Bergabunglah ke server Mumble ini dengan Mumla. %s</string>
     <string name="reconnect">Sambung Ulang</string>
     <string name="action_settings">Pengaturan</string>
     <string name="password">Password</string>
@@ -179,8 +179,8 @@
     <string name="donate_thanks_goog">Terima kasih atas dukungan Anda!</string>
     <string name="donate_foss">Menyumbangkan</string>
     <string name="donate_dialog_negativebutton_goog">Nanti</string>
-    <string name="donate_dialog_positivebutton_goog">Mendukung OFA Mumla</string>
-    <string name="donate_dialog_message_goog">Terima kasih untuk menggunakan OFA Mumla! Harap mempertimbangkan untuk membuat donasi kecil untuk membantu menjaga hidup OFA Mumla - dan menghapus pesan ini.</string>
-    <string name="donate_dialog_title_goog">Apakah kamu suka OFA Mumla?</string>
+    <string name="donate_dialog_positivebutton_goog">Mendukung Mumla</string>
+    <string name="donate_dialog_message_goog">Terima kasih untuk menggunakan Mumla! Harap mempertimbangkan untuk membuat donasi kecil untuk membantu menjaga hidup Mumla - dan menghapus pesan ini.</string>
+    <string name="donate_dialog_title_goog">Apakah kamu suka Mumla?</string>
     <string name="app_news_items_v3_7_1">Rilis kecil dengan sebagian besar pembaruan terjemahan, terima kasih semua penerjemah!\n</string>
 </resources>
