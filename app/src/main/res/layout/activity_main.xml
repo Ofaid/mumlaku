@@ -52,6 +52,11 @@
          android:background="#F5F5F5"
          android:visibility="visible" /> <!-- ← TERSembUNYI, TETAP ADA DI LATAR BELAKANG -->
      <!-- ... SISA TATA LETAK LAINNYA ... -->
+		<se.lublin.mumla.app.NeonVisualizerView
+    android:id="@+id/visualizer_bicara"
+    android:layout_width="match_parent"
+    android:layout_height="12dp"
+    android:visibility="visible"/>
 
 		<WebView
 			android:id="@+id/webViewVisualizer"
