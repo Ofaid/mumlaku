@@ -48,6 +48,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
+// ==============================================
+// ALAT BANTU YANG DIBUTUHKAN
+// ==============================================
+import android.media.audiofx.Visualizer;       // Alat baca suara yang keluar ke pengeras
+import android.media.AudioFormat;               // Bentuk data suara
+import android.media.AudioRecord;               // Alat baca suara dari mikrofon
+import android.media.MediaRecorder;             // Sumber suara: mikrofon
+import androidx.core.app.ActivityCompat;       // Meminta izin ke pengguna
+import android.content.pm.PackageManager;      // Mengecek apakah izin sudah diberikan
+
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -139,7 +149,19 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
     private Visualizer mVisualizer;
-	
+    // PENGATURAN & ALAT PEMBACA SUARA
+    // ==============================================
+    private Visualizer mPenganalisisSuaraKeluaran;   // Alat pantau suara yang keluar dari HP
+    private NeonVisualizerView mTampilanGelombang;   // Tampilan gambar gelombang (PAKAI ID YANG SUDAH ADA — TIDAK BENTROK!)
+    private AudioRecord mPembacaSuaraMikrofon;       // Alat pantau suara masuk ke mikrofon
+    private boolean mSedangMembacaMikrofon = false;  // Penanda: apakah sedang membaca mikrofon?
+    private int mUkuranTempatSimpanData;             // Ukuran tempat simpan data suara
+
+    // PILIHAN SUMBER SUARA — TINGGAL PILIH MANA YANG AKTIF
+    private static final int DARI_SUARA_KELUAR = 0;   // Pantau suara yang didengar
+    private static final int DARI_MIKROFON = 1;       // Pantau suara yang kau ucapkan
+    private int mSumberYangAktif = DARI_SUARA_KELUAR;  // Awalnya pakai suara keluar dulu
+
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
 
@@ -258,7 +280,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         mSettings = Settings.getInstance(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+		
+        mTampilanGelombang = findViewById(R.id.visualizer_view);
         mVisualizerView = findViewById(R.id.visualizer_view);
         setupAudioVisualizer();
 
@@ -421,7 +444,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             mVisualizer.release();
             mVisualizer = null;
         }
-
+       hentikanPembacaSuaraMikrofon(); // ← TAMBAHKAN INI
+	}
         super.onDestroy();
     }
 
@@ -882,7 +906,102 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     } catch (SecurityException e) {
         Log.e(TAG, "❌ Tidak ada izin merekam audio", e);
     } catch (Exception e) {
-        Log.e(TAG, "❌ Gagal menyiapkan visualizer", e);
+        Log.e(TAG, "❌ Gagal menyiapkan visualizer", e);8
     }
+
+		
+    // ==============================================
+    // NAMA: siapkanPembacaSuaraMikrofon
+    // TUGAS: Menyiapkan alat membaca suara yang MASUK ke mikrofon
+    // KETERANGAN: Berjalan terpisah dari yang lama, tidak mengganggu
+    // ==============================================
+    private AudioRecord mPembacaMikrofon;       // Alat baca mikrofon
+    private boolean mSedangBacaMikrofon = false; // Penanda: sedang berjalan atau tidak
+    private int mUkuranBufferMikrofon;          // Tempat simpan data sementara
+
+    // PILIHAN SUMBER — BISA DIPAKAI KEDUA FUNGSI TANPA MERUBAH YANG LAMA
+    private static final int DARI_KELUARAN = 0; // Pakai yang sudah ada
+    private static final int DARI_MIKROFON = 1; // Tambah sumber baru
+    private int mSumberAktif = DARI_KELUARAN;   // Awalnya pakai yang lama
+
+    private void siapkanPembacaSuaraMikrofon() {
+        // Kalau sudah berjalan, jangan buat lagi
+        if (mSedangBacaMikrofon) return;
+
+        // Pengaturan kualitas suara standar
+        int lajuSampel = 44100;
+        int saluran = AudioFormat.CHANNEL_IN_MONO;
+        int bentukData = AudioFormat.ENCODING_PCM_16BIT;
+
+        // Cek ukuran tempat simpan yang dibutuhkan HP
+        mUkuranBufferMikrofon = AudioRecord.getMinBufferSize(lajuSampel, saluran, bentukData);
+
+        // Cek apakah sudah izin merekam
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 1001);
+            return;
+        }
+
+        // Buat alat pembaca mikrofon
+        mPembacaMikrofon = new AudioRecord(
+            MediaRecorder.AudioSource.MIC, // Sumber: mikrofon
+            lajuSampel,
+            saluran,
+            bentukData,
+            mUkuranBufferMikrofon
+        );
+
+        // Mulai baca
+        mSedangBacaMikrofon = true;
+        mPembacaMikrofon.startRecording();
+
+        // Baca data di latar belakang — tidak menyetop layar
+        new Thread(() -> {
+            byte[] dataSuara = new byte[mUkuranBufferMikrofon];
+            while (mSedangBacaMikrofon && !Thread.interrupted()) {
+                int jumlahBaca = mPembacaMikrofon.read(dataSuara, 0, dataSuara.length);
+                // Kirim ke tampilan — HANYA kalau sedang pilih sumber mikrofon
+                if (jumlahBaca > 0 && mVisualizerView != null && mSumberAktif == DARI_MIKROFON) {
+                    mVisualizerView.updateVisualizer(dataSuara);
+                }
+                try { Thread.sleep(30); } catch (InterruptedException e) { break; }
+            }
+        }).start();
+
+        Log.i(TAG, "✅ Pembaca mikrofon siap berjalan!");
+    }
+
+    // ==============================================
+    // NAMA: hentikanPembacaSuaraMikrofon
+    // TUGAS: Matikan dan bebaskan memori supaya tidak boros baterai
+    // ==============================================
+    private void hentikanPembacaSuaraMikrofon() {
+        mSedangBacaMikrofon = false;
+        if (mPembacaMikrofon != null) {
+            mPembacaMikrofon.stop();
+            mPembacaMikrofon.release();
+            mPembacaMikrofon = null;
+        }
+        Log.i(TAG, "⏹️ Pembaca mikrofon dihentikan");
+    }
+
+    // ==============================================
+    // NAMA: pakaiSumberKeluaran / pakaiSumberMikrofon
+    // TUGAS: Pindah antara dua sumber suara
+    // ==============================================
+    public void pakaiSumberKeluaran() {
+        hentikanPembacaSuaraMikrofon();
+        mSumberAktif = DARI_KELUARAN;
+        if (mVisualizer != null) mVisualizer.setEnabled(true);
+        Log.i(TAG, "🔄 Sekarang pantau: Suara Keluaran");
+    }
+
+    public void pakaiSumberMikrofon() {
+        if (mVisualizer != null) mVisualizer.setEnabled(false);
+        mSumberAktif = DARI_MIKROFON;
+        siapkanPembacaSuaraMikrofon();
+        Log.i(TAG, "🔄 Sekarang pantau: Mikrofon");
+    }
+
 }  
 }
