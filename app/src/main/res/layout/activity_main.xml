@@ -44,12 +44,22 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 		
+	<se.lublin.mumla.app.NeonVisualizerView
+         android:id="@+id/visualizer_view"
+         android:layout_width="match_parent"
+         android:layout_height="80dp"
+         android:layout_alignParentTop="true"
+         android:background="#F5F5F5"
+         android:visibility="visible" /> <!-- ← TERSembUNYI, TETAP ADA DI LATAR BELAKANG -->
+     <!-- ... SISA TATA LETAK LAINNYA ... -->
+ </RelativeLayout>
 		<se.lublin.mumla.app.NeonVisualizerView
-    android:id="@+id/visualizer_view"
+    android:id="@+id/visualizer_view_bawah"
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_gravity="bottom"
-    android:background="#00000000" />
+    android:background="#00000000" 
+    android:visibility="gone"/>
 
 		<WebView
 			android:id="@+id/webViewVisualizer"
