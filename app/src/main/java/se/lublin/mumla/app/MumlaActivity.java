@@ -27,8 +27,12 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+
 import android.media.AudioManager;
-import android.media.audiofx.Visualizer;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -138,8 +142,12 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
-    private Visualizer mVisualizer;
+
+    private AudioRecord mAudioRecord;
     private boolean mVisualizerRunning = false;
+    private int mMinBufferSize;
+    private Thread mVisualizerThread;
+
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
 
@@ -490,7 +498,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 .setTitle(R.string.first_run_generate_certificate_title)
                 .setMessage(msg)
                 .setPositiveButton(R.string.generate, (dialog, which) -> {
-                    MumlaCertificateGenerateTask generateTask = new MumlaCertificateGenerateTask(MumlaActivity.this) {
+                    MumlaCertificateGenerateTask generateTask = new MumlaCertificateGenerateTask(this) {
                         @Override
                         protected void onPostExecute(DatabaseCertificate result) {
                             super.onPostExecute(result);
@@ -550,18 +558,18 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     }
 
     public void connectToServerWithPerm() {
-        if (ContextCompat.checkSelfPermission(MumlaActivity.this,
+        if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MumlaActivity.this,
+            ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.RECORD_AUDIO},
                     PERMISSIONS_REQUEST_RECORD_AUDIO);
             return;
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !mPermPostNotificationsAsked) {
-            if (ContextCompat.checkSelfPermission(MumlaActivity.this,
+            if (ContextCompat.checkSelfPermission(this,
                     Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(MumlaActivity.this,
+                ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.POST_NOTIFICATIONS},
                         PERMISSIONS_REQUEST_POST_NOTIFICATIONS);
                 return;
@@ -597,14 +605,14 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         if (mSettings.isTorEnabled()) {
             if (!OrbotHelper.isOrbotInstalled(this)) {
                 mSettings.disableTor();
-                new MaterialAlertDialogBuilder(MumlaActivity.this)
+                new MaterialAlertDialogBuilder(this)
                         .setMessage(R.string.orbot_not_installed)
                         .setPositiveButton(android.R.string.ok, null)
                         .show();
                 return;
             } else {
                 if (!isPortOpen(HumlaConnection.TOR_HOST, HumlaConnection.TOR_PORT, 2000)) {
-                    new MaterialAlertDialogBuilder(MumlaActivity.this)
+                    new MaterialAlertDialogBuilder(this)
                             .setMessage(getString(R.string.orbot_tor_failed, HumlaConnection.TOR_PORT))
                             .setPositiveButton(android.R.string.ok, null)
                             .show();
@@ -628,16 +636,16 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     connectToServerWithPerm();
                 } else {
-                    Toast.makeText(MumlaActivity.this, getString(R.string.grant_perm_microphone),
+                    Toast.makeText(this, getString(R.string.grant_perm_microphone),
                             Toast.LENGTH_LONG).show();
                 }
                 break;
             case PERMISSIONS_REQUEST_POST_NOTIFICATIONS:
                 mPermPostNotificationsAsked = true;
                 if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(MumlaActivity.this,
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                             Manifest.permission.POST_NOTIFICATIONS)) {
-                        Toast.makeText(MumlaActivity.this,
+                        Toast.makeText(this,
                                 getString(R.string.grant_perm_notifications), Toast.LENGTH_LONG).show();
                     }
                 }
@@ -841,52 +849,65 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     private void setupAudioVisualizer() {
         if (mVisualizerRunning) return;
-        if (mVisualizer != null) {
-            mVisualizer.release();
-            mVisualizer = null;
-        }
-        try {
-            mVisualizer = new Visualizer(0);
-            int[] range = Visualizer.getCaptureSizeRange();
-            if (range.length == 0) {
-                Log.e(TAG, "Perangkat tidak mendukung Visualizer");
-                return;
-            }
-            int captureSize = range[1];
-            mVisualizer.setCaptureSize(captureSize);
 
-            mVisualizer.setDataCaptureListener(
-                new Visualizer.OnDataCaptureListener() {
-                    @Override
-                    public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
-                        if (mVisualizerView != null) {
-                            mVisualizerView.updateVisualizer(waveform);
-                        }
-                    }
-                    @Override
-                    public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
-                },
-                Visualizer.getMaxCaptureRate() / 2,
-                true,
-                false
+        try {
+            int sampleRate = 44100;
+            int channelConfig = AudioFormat.CHANNEL_IN_MONO;
+            int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
+            mMinBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
+
+            mAudioRecord = new AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                sampleRate,
+                channelConfig,
+                audioFormat,
+                mMinBufferSize
             );
 
-            mVisualizer.setEnabled(true);
+            mAudioRecord.startRecording();
             mVisualizerRunning = true;
-            Log.i(TAG, "Visualizer berjalan");
-        } catch (SecurityException e) {
-            Log.e(TAG, "Tidak ada izin untuk Visualizer", e);
+
+            mVisualizerThread = new Thread(() -> {
+                byte[] buffer = new byte[mMinBufferSize];
+                while (mVisualizerRunning && !Thread.currentThread().isInterrupted()) {
+                    int read = mAudioRecord.read(buffer, 0, mMinBufferSize);
+                    if (read > 0 && mVisualizerView != null) {
+                        mVisualizerView.updateVisualizer(buffer);
+                    }
+                    try {
+                        Thread.sleep(16);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            });
+            mVisualizerThread.setName("VisualizerThread");
+            mVisualizerThread.start();
+
         } catch (Exception e) {
-            Log.e(TAG, "Gagal menyiapkan Visualizer", e);
+            android.util.Log.e("Visualizer", "Gagal nyalakan: " + e.getMessage());
         }
     }
 
     private void releaseVisualizer() {
-        if (mVisualizer != null) {
-            mVisualizer.setEnabled(false);
-            mVisualizer.release();
-            mVisualizer = null;
-        }
         mVisualizerRunning = false;
+
+        if (mVisualizerThread != null) {
+            mVisualizerThread.interrupt();
+            try {
+                mVisualizerThread.join(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            mVisualizerThread = null;
+        }
+
+        if (mAudioRecord != null) {
+            try {
+                mAudioRecord.stop();
+                mAudioRecord.release();
+            } catch (Exception ignored) {}
+            mAudioRecord = null;
+        }
     }
 }
