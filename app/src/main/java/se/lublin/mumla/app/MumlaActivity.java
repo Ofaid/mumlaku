@@ -352,7 +352,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             }
         };
 
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
@@ -401,7 +401,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
-        setupAudioVisualizer();
+        // CATATAN: setupAudioVisualizer() sudah DIHAPUS dari sini — nyala hanya saat tekan PTT
     }
 
     @Override
@@ -465,6 +465,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyDown();
+            setupAudioVisualizer(); // Nyalakan visualizer saat tekan bicara
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -474,6 +475,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyUp();
+            releaseVisualizer(); // Matikan visualizer saat lepas bicara
             return true;
         }
         return super.onKeyUp(keyCode, event);
