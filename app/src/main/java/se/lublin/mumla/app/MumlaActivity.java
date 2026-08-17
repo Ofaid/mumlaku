@@ -145,6 +145,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     private AudioRecord mAudioRecord;
     private boolean mVisualizerRunning = false;
+    private boolean mVisualizerPaused = false; // Tambahan: jeda sementara, bukan hapus
     private int mMinBufferSize;
     private Thread mVisualizerThread;
 
@@ -401,12 +402,14 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
-        // CATATAN: setupAudioVisualizer() sudah DIHAPUS dari sini — nyala hanya saat tekan PTT
+        // ✅ Siapkan alat rekam SEKALI saja saat layar muncul — tidak dibuang-buang
+        prepareAudioVisualizer();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        // ❌ Lepas alat rekam HANYA saat layar ditutup
         releaseVisualizer();
 
         if (mErrorDialog != null) mErrorDialog.dismiss();
@@ -465,7 +468,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyDown();
-            setupAudioVisualizer(); // Nyalakan visualizer saat tekan bicara
+            // ✅ Mulai tampilkan visualizer saat tekan PTT
+            resumeVisualizer();
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -475,7 +479,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyUp();
-            releaseVisualizer(); // Matikan visualizer saat lepas bicara
+            // ✅ Jeda tampilkan visualizer saat lepas PTT — alatnya tetap siap
+            pauseVisualizer();
             return true;
         }
         return super.onKeyUp(keyCode, event);
@@ -849,7 +854,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         }
     }
 
-    private void setupAudioVisualizer() {
+    // ✅ SIAPKAN ALAT SEKALI SAJA — tidak dibuat/dihapus tiap tekan PTT
+    private void prepareAudioVisualizer() {
         if (mVisualizerRunning) return;
 
         try {
@@ -868,13 +874,16 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
             mAudioRecord.startRecording();
             mVisualizerRunning = true;
+            mVisualizerPaused = true; // Awalnya jeda, baru jalan saat tekan PTT
 
             mVisualizerThread = new Thread(() -> {
                 byte[] buffer = new byte[mMinBufferSize];
                 while (mVisualizerRunning && !Thread.currentThread().isInterrupted()) {
-                    int read = mAudioRecord.read(buffer, 0, mMinBufferSize);
-                    if (read > 0 && mVisualizerView != null) {
-                        mVisualizerView.updateVisualizer(buffer);
+                    if (!mVisualizerPaused) { // Hanya baca & tampil kalau tidak dijeda
+                        int read = mAudioRecord.read(buffer, 0, mMinBufferSize);
+                        if (read > 0 && mVisualizerView != null) {
+                            mVisualizerView.updateVisualizer(buffer);
+                        }
                     }
                     try {
                         Thread.sleep(16);
@@ -887,12 +896,27 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             mVisualizerThread.start();
 
         } catch (Exception e) {
-            android.util.Log.e("Visualizer", "Gagal nyalakan: " + e.getMessage());
+            android.util.Log.e("Visualizer", "Gagal siapkan: " + e.getMessage());
         }
     }
 
+    // ✅ LANJUTKAN VISUALIZER — saat tekan PTT
+    private void resumeVisualizer() {
+        mVisualizerPaused = false;
+    }
+
+    // ✅ JEDA VISUALIZER — saat lepas PTT, alat TETAP BERJALAN
+    private void pauseVisualizer() {
+        mVisualizerPaused = true;
+        if (mVisualizerView != null) {
+            mVisualizerView.clearVisualizer(); // Hapus tampilan saat dijeda
+        }
+    }
+
+    // ✅ LEPAS ALAT HANYA SAAT LAYAR DITUTUP / DIHANCURKAN
     private void releaseVisualizer() {
         mVisualizerRunning = false;
+        mVisualizerPaused = true;
 
         if (mVisualizerThread != null) {
             mVisualizerThread.interrupt();
