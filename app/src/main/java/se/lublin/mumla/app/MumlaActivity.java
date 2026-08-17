@@ -28,7 +28,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.media.AudioManager;
-import android.media.audiofx.Visualizer;  // ✅ BENAR — ini tempatnya!
+import android.media.audiofx.Visualizer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -139,7 +139,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
     private Visualizer mVisualizer;
-	
+    private boolean mVisualizerRunning = false;
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
 
@@ -260,7 +260,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         setContentView(R.layout.activity_main);
 
         mVisualizerView = findViewById(R.id.visualizer_view);
-        setupAudioVisualizer();
 
         WebView webView = findViewById(R.id.webViewVisualizer);
         WebSettings pengaturan = webView.getSettings();
@@ -394,17 +393,21 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
+        setupAudioVisualizer();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        releaseVisualizer();
+
         if (mErrorDialog != null) mErrorDialog.dismiss();
         if (mConnectingDialog != null) mConnectingDialog.dismiss();
 
         if (mService != null) {
-            for (HumlaServiceFragment fragment : mServiceFragments)
+            for (HumlaServiceFragment fragment : mServiceFragments) {
                 fragment.setServiceBound(false);
+            }
             mService.unregisterObserver(mObserver);
             mService.setSuppressNotifications(false);
         }
@@ -417,11 +420,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         preferences.unregisterOnSharedPreferenceChangeListener(this);
         mDatabase.close();
 
-        if (mVisualizer != null) {
-            mVisualizer.release();
-            mVisualizer = null;
-        }
-
+        releaseVisualizer();
         super.onDestroy();
     }
 
@@ -841,48 +840,53 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     }
 
     private void setupAudioVisualizer() {
-    if (mVisualizer != null) {
-        mVisualizer.release();
-        mVisualizer = null;
-    }
-    try {
-        // Sesi audio 0 = seluruh suara keluaran perangkat
-        mVisualizer = new Visualizer(0);
-
-        // Cek ukuran penangkapan data yang didukung
-        int[] range = Visualizer.getCaptureSizeRange();
-        if (range.length == 0) {
-            Log.e(TAG, "❌ Perangkat tidak mendukung Visualizer");
-            return;
+        if (mVisualizerRunning) return;
+        if (mVisualizer != null) {
+            mVisualizer.release();
+            mVisualizer = null;
         }
-        int captureSize = range[1]; // Pakai ukuran maksimal
-        mVisualizer.setCaptureSize(captureSize);
+        try {
+            mVisualizer = new Visualizer(0);
+            int[] range = Visualizer.getCaptureSizeRange();
+            if (range.length == 0) {
+                Log.e(TAG, "Perangkat tidak mendukung Visualizer");
+                return;
+            }
+            int captureSize = range[1];
+            mVisualizer.setCaptureSize(captureSize);
 
-        // Pasang pendengar data
-        mVisualizer.setDataCaptureListener(
-            new Visualizer.OnDataCaptureListener() {
-                @Override
-                public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
-                    if (mVisualizerView != null) {
-                        mVisualizerView.updateVisualizer(waveform);
-                        Log.d(TAG, "📡 Dapat data: " + waveform.length + " byte");
+            mVisualizer.setDataCaptureListener(
+                new Visualizer.OnDataCaptureListener() {
+                    @Override
+                    public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
+                        if (mVisualizerView != null) {
+                            mVisualizerView.updateVisualizer(waveform);
+                        }
                     }
-                }
-                @Override
-                public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
-            },
-            Visualizer.getMaxCaptureRate() / 2, // Kecepatan tangkap
-            true, // Ambil data bentuk gelombang
-            false // Tidak ambil data frekuensi
-        );
+                    @Override
+                    public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {}
+                },
+                Visualizer.getMaxCaptureRate() / 2,
+                true,
+                false
+            );
 
-        mVisualizer.setEnabled(true); // Nyalakan
-        Log.i(TAG, "✅ Visualizer siap berjalan!");
-
-    } catch (SecurityException e) {
-        Log.e(TAG, "❌ Tidak ada izin merekam audio", e);
-    } catch (Exception e) {
-        Log.e(TAG, "❌ Gagal menyiapkan visualizer", e);
+            mVisualizer.setEnabled(true);
+            mVisualizerRunning = true;
+            Log.i(TAG, "Visualizer berjalan");
+        } catch (SecurityException e) {
+            Log.e(TAG, "Tidak ada izin untuk Visualizer", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Gagal menyiapkan Visualizer", e);
+        }
     }
-}  
+
+    private void releaseVisualizer() {
+        if (mVisualizer != null) {
+            mVisualizer.setEnabled(false);
+            mVisualizer.release();
+            mVisualizer = null;
+        }
+        mVisualizerRunning = false;
+    }
 }
