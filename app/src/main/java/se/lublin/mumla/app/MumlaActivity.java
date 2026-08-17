@@ -139,7 +139,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     // VISUALIZER — DUA SALURAN, TIDAK BENTROK
     // ==============================================
     private NeonVisualizerView mVisualizerDengar;   // Suara keluaran (musik/teman bicara)
-    private NeonVisualizerView mVisualizerBicara;   // Suara saat kau bicara (diisi dari dalam aplikasi)
+    private NeonVisualizerView mVisualizerBicara;   // Suara saat kau bicara
     private Visualizer mVisualizer;                  // Alat pantau suara keluaran sistem
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
@@ -148,6 +148,10 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             mService = ((MumlaService.MumlaBinder) service).getService();
+            
+            // ✅ SAMBUNGKAN ACTIVITY KE LAYANAN — UNTUK DATA SUARA BICARA
+            mService.setMumlaActivity(MumlaActivity.this);
+            
             mService.setSuppressNotifications(true);
             mService.registerObserver(mObserver);
             mService.clearChatNotifications();
@@ -259,7 +263,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Hubungkan DUA VISUALIZER dari XML
+        // Hubungkan DUA VISUALIZER dari XML — PASTIKAN ID DI XML SUDAH BENAR
         mVisualizerDengar = findViewById(R.id.visualizer_dengar);
         mVisualizerBicara = findViewById(R.id.visualizer_bicara);
 
@@ -891,8 +895,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     // ==============================================
     // NAMA: kirimDataSuaraBicaraKeVisualizer
-    // TUGAS: DIPANGGIL DARI TEMPAT YANG MEMPROSES SUARA MIKROFON
-    // CARA: Tinggal panggil metode ini + kirim data byte[]
+    // TUGAS: DIPANGGIL DARI HumlaService — TERIMA DATA SUARA & KIRIM KE VISUALIZER
     // ==============================================
     public void kirimDataSuaraBicaraKeVisualizer(byte[] dataSuara) {
         if (mVisualizerBicara != null && dataSuara != null) {
