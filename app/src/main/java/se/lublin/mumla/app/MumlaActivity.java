@@ -149,6 +149,12 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
     private Visualizer mVisualizer;
+	// Yang lama — tetap ada, tidak disentuh!
+    private NeonVisualizerView mVisualizerView;
+
+// Yang baru — tambahkan saja di bawahnya
+    private NeonVisualizerView mVisualizerViewBawah;
+
     // PENGATURAN & ALAT PEMBACA SUARA
     // ==============================================
     private Visualizer mPenganalisisSuaraKeluaran;   // Alat pantau suara yang keluar dari HP
@@ -281,7 +287,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 		
-        mTampilanGelombang = findViewById(R.id.visualizer_view);
         mVisualizerView = findViewById(R.id.visualizer_view);
         setupAudioVisualizer();
 
