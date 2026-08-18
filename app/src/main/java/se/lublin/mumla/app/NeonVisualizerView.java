@@ -9,11 +9,22 @@ import android.view.View;
 
 public class NeonVisualizerView extends View {
     private byte[] mWaveform;
-    private Paint mPaint = new Paint();
+    private final Paint mPaint = new Paint();
 
-    public NeonVisualizerView(Context context) { super(context); init(); }
-    public NeonVisualizerView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
-    public NeonVisualizerView(Context context, AttributeSet attrs, int defStyle) { super(context, attrs, defStyle); init(); }
+    public NeonVisualizerView(Context context) {
+        super(context);
+        init();
+    }
+
+    public NeonVisualizerView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    public NeonVisualizerView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        init();
+    }
 
     private void init() {
         mPaint.setColor(Color.CYAN);
@@ -21,15 +32,16 @@ public class NeonVisualizerView extends View {
         mPaint.setAntiAlias(true);
     }
 
+    // ✅ Fungsi resmi untuk menerima data gelombang suara
     public void updateVisualizer(byte[] waveform) {
         this.mWaveform = waveform;
-        invalidate(); // Minta menggambar ulang
+        invalidate();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (mWaveform == null) return;
+        if (mWaveform == null || mWaveform.length == 0) return;
 
         int width = getWidth();
         int height = getHeight();
@@ -40,7 +52,7 @@ public class NeonVisualizerView extends View {
             // Ubah nilai byte (-128 s/d 127) jadi tinggi garis
             float amplitude = (mWaveform[i] + 128) / 256f * height;
             float x = i * barWidth;
-            canvas.drawLine(x, centerY - amplitude/2, x, centerY + amplitude/2, mPaint);
+            canvas.drawLine(x, centerY - amplitude / 2f, x, centerY + amplitude / 2f, mPaint);
         }
     }
 }
