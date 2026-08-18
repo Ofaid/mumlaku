@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*edit ke2*/
+/*edit ke3*/
 package se.lublin.mumla.app;
 
 import static java.util.Objects.requireNonNull;
@@ -324,7 +324,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 View footerView = getLayoutInflater().inflate(layoutResId, mDrawerList, false);
                 mDrawerList.addHeaderView(footerView, null, true);
                 footerView.setOnClickListener(v -> {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(stringResId)));
+                    Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(getString(stringResId)));
                     startActivity(intent);
                     mDrawerLayout.closeDrawers();
                 });
