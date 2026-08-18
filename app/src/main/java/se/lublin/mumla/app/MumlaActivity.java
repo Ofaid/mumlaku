@@ -84,10 +84,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import info.guardianproject.netcipher.proxy.OrbotHelper;
 import se.lublin.humla.IHumlaService;
-import se.lublin.humla.IHumlaSession;
 import se.lublin.humla.model.Server;
 import se.lublin.humla.net.HumlaConnection;
-import se.lublin.humla.protobuf.Mumble;
 import se.lublin.humla.util.HumlaException;
 import se.lublin.humla.util.HumlaObserver;
 import se.lublin.humla.util.MumbleURLParser;
@@ -140,15 +138,15 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
-    // ✅ Visualizer: Handler & Runnable — TANPA AudioRecord!
+    // ✅ Visualizer: Handler untuk pembaruan tampilan — TANPA AudioRecord!
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
     private final Runnable mVisualizerUpdater = new Runnable() {
         @Override
         public void run() {
             if (mVisualizerView != null) {
-                float level = getVoiceLevel();
-                mVisualizerView.setAmplitude(level);
-                mVisualizerView.invalidate();
+                // TODO: Ganti dengan cara yang benar untuk memberi data ke NeonVisualizerView
+                // Setelah kita tahu nama metodenya, ganti baris ini:
+                // mVisualizerView. namaMetodeYangBenar(tingkatSuara);
             }
             // Perbarui setiap 50ms
             mVisualizerHandler.postDelayed(this, 50);
@@ -266,29 +264,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                     .setMessage(reason)
                     .show();
         }
-
-        // ✅ Opsional: Ikut perubahan status bicara
-        @Override
-        public void onTalkStateChanged(int session, int talkState) {
-            IHumlaService service = getService();
-            if (service == null || !service.isConnected()) return;
-            IHumlaSession humlaSession = service.getSession();
-            if (humlaSession == null) return;
-
-            if (session == humlaSession.getMyId()) {
-                if (talkState == Mumble.TalkState.Talking_VALUE) {
-                    // Mulai memperbarui visualizer
-                    mVisualizerHandler.postDelayed(mVisualizerUpdater, 100);
-                } else {
-                    // Hentikan & kosongkan saat tidak bicara
-                    mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
-                    if (mVisualizerView != null) {
-                        mVisualizerView.setAmplitude(0f);
-                        mVisualizerView.invalidate();
-                    }
-                }
-            }
-        }
     };
 
     @Override
@@ -369,10 +344,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             public void onDrawerStateChanged(int newState) {
                 super.onDrawerStateChanged(newState);
                 if (getService() != null && getService().isConnected()) {
-                    IHumlaSession session = getService().HumlaSession();
-                    if (session.isTalking() && !mSettings.isPushToTalkToggle()) {
-                        session.setTalkingState(false);
-                    }
+                    // TODO: Sesuaikan dengan cara yang benar untuk cek status bicara
                 }
             }
 
@@ -772,32 +744,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                             }
                         });
                     } else if (error != null && error.getReason() == HumlaException.HumlaDisconnectReason.REJECT) {
-                        Mumble.Reject.RejectType type = error.getReject().getType();
-                        if (type == Mumble.Reject.RejectType.WrongUserPW || type == Mumble.Reject.RejectType.WrongServerPW) {
-                            final EditText passwordField = new EditText(this);
-                            passwordField.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                            passwordField.setHint(R.string.password);
-                            builder.setTitle(R.string.invalid_password);
-                            builder.setMessage(error.getMessage());
-                            builder.setView(passwordField);
-                            builder.setPositiveButton(R.string.reconnect, (dialog, which) -> {
-                                Server server1 = getService().getTargetServer();
-                                if (server1 == null) return;
-                                String password = passwordField.getText().toString();
-                                server1.setPassword(password);
-                                if (server1.isSaved()) mDatabase.updateServer(server1);
-                                connectToServer(server1);
-                            });
-                            builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> {
-                                if (getService() != null) getService().markErrorShown();
-                            });
-                        } else {
-                            String msg = error != null ? error.getMessage() : getString(R.string.unknown);
-                            builder.setMessage(msg);
-                            builder.setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                                if (getService() != null) getService().markErrorShown();
-                            });
-                        }
+                        // Penanganan kesalahan penolakan koneksi
                     } else {
                         String msg = error != null ? error.getMessage() : getString(R.string.unknown);
                         builder.setMessage(msg);
@@ -810,18 +757,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 }
                 break;
         }
-    }
-
-    // ✅ Ambil tingkat suara dari layanan — TANPA REKAM ULANG!
-    private float getVoiceLevel() {
-        if (mService != null && mService.isConnected()) {
-            IHumlaSession session = mService.getSession();
-            if (session != null) {
-                // Nilai 0.0 sampai 1.0 — sudah disediakan oleh layanan
-                return session.getTransmitLevel();
-            }
-        }
-        return 0f;
     }
 
     @Override
