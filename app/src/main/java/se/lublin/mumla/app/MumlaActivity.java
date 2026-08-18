@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*edit ke3*/
+/*edit ke4 — Ganti data uji jadi data mikrofon asli */
 package se.lublin.mumla.app;
 
 import static java.util.Objects.requireNonNull;
@@ -73,6 +73,8 @@ import org.spongycastle.util.encoders.Hex;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -138,28 +140,47 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
-    // ✅ Visualizer: Pembaruan tampilan — TANPA AudioRecord!
+    // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
     private final Runnable mVisualizerUpdater = new Runnable() {
         @Override
         public void run() {
             if (mVisualizerView != null) {
-                // 📊 Kirim data uji coba — langsung muncul garis bergerak!
-                byte[] data = buatDataUji();
-                mVisualizerView.updateVisualizer(data);
+                byte[] data = ambilDataSuaraDariLayanan();
+                if (data != null) {
+                    mVisualizerView.updateVisualizer(data);
+                }
             }
             mVisualizerHandler.postDelayed(this, 50);
         }
     };
 
-    // 📊 Membuat data gelombang uji coba
-    private byte[] buatDataUji() {
-        byte[] buffer = new byte[64];
-        long waktu = System.currentTimeMillis() / 120;
-        for (int i = 0; i < buffer.length; i++) {
-            buffer[i] = (byte) (Math.sin((waktu + i) * 0.3) * 70);
+    /**
+     * 🎙️ Ambil data suara asli dari layanan — TANPA membuat AudioRecord baru!
+     * Menggunakan metode yang sudah tersedia di IMumlaService.
+     */
+    private byte[] ambilDataSuaraDariLayanan() {
+        if (mService == null) return null;
+
+        try {
+            // Cek apakah layanan punya metode ambil data gelombang suara
+            short[] dataGelombang = mService.getRecordingBuffer();
+            if (dataGelombang == null || dataGelombang.length == 0) return null;
+
+            // Ubah short[] → byte[] sesuai format yang dibutuhkan visualizer
+            int panjang = Math.min(dataGelombang.length, 64);
+            byte[] hasil = new byte[panjang];
+            for (int i = 0; i < panjang; i++) {
+                // Ubah rentang -32768..32767 → -128..127
+                hasil[i] = (byte) (dataGelombang[i] >> 8);
+            }
+            return hasil;
+
+        } catch (NoSuchMethodError e) {
+            // Jika metode belum tersedia di versi ini, kembalikan null (tidak tampil apa-apa)
+            Log.w(TAG, "Metode getRecordingBuffer belum tersedia di layanan", e);
+            return null;
         }
-        return buffer;
     }
 
 
@@ -412,14 +433,12 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
-        // ✅ Mulai memperbarui visualizer
         mVisualizerHandler.postDelayed(mVisualizerUpdater, 100);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // ✅ Hentikan supaya tidak membuang daya
         mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
 
         if (mErrorDialog != null) mErrorDialog.dismiss();
