@@ -138,20 +138,29 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
-    // ✅ Visualizer: Handler untuk pembaruan tampilan — TANPA AudioRecord!
+    // ✅ Visualizer: Pembaruan tampilan — TANPA AudioRecord!
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
     private final Runnable mVisualizerUpdater = new Runnable() {
         @Override
         public void run() {
             if (mVisualizerView != null) {
-                // TODO: Ganti dengan cara yang benar untuk memberi data ke NeonVisualizerView
-                // Setelah kita tahu nama metodenya, ganti baris ini:
-                // mVisualizerView. namaMetodeYangBenar(tingkatSuara);
+                // 📊 Kirim data uji coba — langsung muncul garis bergerak!
+                byte[] data = buatDataUji();
+                mVisualizerView.updateVisualizer(data);
             }
-            // Perbarui setiap 50ms
             mVisualizerHandler.postDelayed(this, 50);
         }
     };
+
+    // 📊 Membuat data gelombang uji coba
+    private byte[] buatDataUji() {
+        byte[] buffer = new byte[64];
+        long waktu = System.currentTimeMillis() / 120;
+        for (int i = 0; i < buffer.length; i++) {
+            buffer[i] = (byte) (Math.sin((waktu + i) * 0.3) * 70);
+        }
+        return buffer;
+    }
 
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
@@ -403,7 +412,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
-        // ✅ Mulai memperbarui visualizer saat layar aktif
+        // ✅ Mulai memperbarui visualizer
         mVisualizerHandler.postDelayed(mVisualizerUpdater, 100);
     }
 
