@@ -104,6 +104,10 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     public static final String EXTRAS_LOCAL_IGNORE_HISTORY = "local_ignore_history";
     public static final String EXTRAS_ENABLE_PREPROCESSOR = "enable_preprocessor";
     public static final String EXTRAS_ECHO_CANCELLATION_METHOD = "echo_cancellation_method";
+    public static final String EXTRAS_AUDIO_SOURCE = "audio_source";
+    public static final String EXTRAS_AUDIO_STREAM = "audio_stream";
+    public static final String EXTRAS_FRAMES_PER_PACKET = "frames_per_packet";
+    public static final int CONNECTED = 2;
 
     private Server mServer;
     private boolean mAutoReconnect;
