@@ -16,9 +16,6 @@
  */
 
 
-
-
-
-
-
 include ':libraries:humla', ':app'
+project(':libraries:humla').projectDir = file('libraries/humla')
+
