@@ -29,13 +29,10 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 
 import android.media.AudioManager;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
-
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.IBinder;
 import android.text.InputType;
 import android.util.Log;
@@ -143,10 +140,20 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
-    private AudioRecord mAudioRecord;
-    private boolean mVisualizerRunning = false;
-    private int mMinBufferSize;
-    private Thread mVisualizerThread;
+    // ✅ Visualizer: Handler & Runnable — TANPA AudioRecord!
+    private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mVisualizerUpdater = new Runnable() {
+        @Override
+        public void run() {
+            if (mVisualizerView != null) {
+                float level = getVoiceLevel();
+                mVisualizerView.setAmplitude(level);
+                mVisualizerView.invalidate();
+            }
+            // Perbarui setiap 50ms
+            mVisualizerHandler.postDelayed(this, 50);
+        }
+    };
 
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
@@ -259,6 +266,29 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                     .setMessage(reason)
                     .show();
         }
+
+        // ✅ Opsional: Ikut perubahan status bicara
+        @Override
+        public void onTalkStateChanged(int session, int talkState) {
+            IHumlaService service = getService();
+            if (service == null || !service.isConnected()) return;
+            IHumlaSession humlaSession = service.getSession();
+            if (humlaSession == null) return;
+
+            if (session == humlaSession.getMyId()) {
+                if (talkState == Mumble.TalkState.Talking_VALUE) {
+                    // Mulai memperbarui visualizer
+                    mVisualizerHandler.postDelayed(mVisualizerUpdater, 100);
+                } else {
+                    // Hentikan & kosongkan saat tidak bicara
+                    mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
+                    if (mVisualizerView != null) {
+                        mVisualizerView.setAmplitude(0f);
+                        mVisualizerView.invalidate();
+                    }
+                }
+            }
+        }
     };
 
     @Override
@@ -352,7 +382,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             }
         };
 
-        mDrawerLayout.setDrawerListener(mDrawerToggle);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
@@ -401,13 +431,15 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onResume();
         Intent connectIntent = new Intent(this, MumlaService.class);
         bindService(connectIntent, mConnection, 0);
-        setupAudioVisualizer();
+        // ✅ Mulai memperbarui visualizer saat layar aktif
+        mVisualizerHandler.postDelayed(mVisualizerUpdater, 100);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        releaseVisualizer();
+        // ✅ Hentikan supaya tidak membuang daya
+        mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
 
         if (mErrorDialog != null) mErrorDialog.dismiss();
         if (mConnectingDialog != null) mConnectingDialog.dismiss();
@@ -424,11 +456,10 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     @Override
     protected void onDestroy() {
+        mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.unregisterOnSharedPreferenceChangeListener(this);
         mDatabase.close();
-
-        releaseVisualizer();
         super.onDestroy();
     }
 
@@ -781,6 +812,18 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         }
     }
 
+    // ✅ Ambil tingkat suara dari layanan — TANPA REKAM ULANG!
+    private float getVoiceLevel() {
+        if (mService != null && mService.isConnected()) {
+            IHumlaSession session = mService.getSession();
+            if (session != null) {
+                // Nilai 0.0 sampai 1.0 — sudah disediakan oleh layanan
+                return session.getTransmitLevel();
+            }
+        }
+        return 0f;
+    }
+
     @Override
     public IMumlaService getService() {
         return mService;
@@ -844,70 +887,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             case CONNECT_ACTION:
                 connectToServer(server);
                 break;
-        }
-    }
-
-    private void setupAudioVisualizer() {
-        if (mVisualizerRunning) return;
-
-        try {
-            int sampleRate = 44100;
-            int channelConfig = AudioFormat.CHANNEL_IN_MONO;
-            int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-            mMinBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat);
-
-            mAudioRecord = new AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                sampleRate,
-                channelConfig,
-                audioFormat,
-                mMinBufferSize
-            );
-
-            mAudioRecord.startRecording();
-            mVisualizerRunning = true;
-
-            mVisualizerThread = new Thread(() -> {
-                byte[] buffer = new byte[mMinBufferSize];
-                while (mVisualizerRunning && !Thread.currentThread().isInterrupted()) {
-                    int read = mAudioRecord.read(buffer, 0, mMinBufferSize);
-                    if (read > 0 && mVisualizerView != null) {
-                        mVisualizerView.updateVisualizer(buffer);
-                    }
-                    try {
-                        Thread.sleep(16);
-                    } catch (InterruptedException e) {
-                        break;
-                    }
-                }
-            });
-            mVisualizerThread.setName("VisualizerThread");
-            mVisualizerThread.start();
-
-        } catch (Exception e) {
-            android.util.Log.e("Visualizer", "Gagal nyalakan: " + e.getMessage());
-        }
-    }
-
-    private void releaseVisualizer() {
-        mVisualizerRunning = false;
-
-        if (mVisualizerThread != null) {
-            mVisualizerThread.interrupt();
-            try {
-                mVisualizerThread.join(500);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            mVisualizerThread = null;
-        }
-
-        if (mAudioRecord != null) {
-            try {
-                mAudioRecord.stop();
-                mAudioRecord.release();
-            } catch (Exception ignored) {}
-            mAudioRecord = null;
         }
     }
 }
