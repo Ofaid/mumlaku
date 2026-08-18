@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2014 Andrew Comminos
  *
@@ -909,7 +910,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private void pauseVisualizer() {
         mVisualizerPaused = true;
         if (mVisualizerView != null) {
-            mVisualizerView.clearVisualizer(); // Hapus tampilan saat dijeda
+        //    mVisualizerView.clearVisualizer(); // Hapus tampilan saat dijeda
         }
     }
 
