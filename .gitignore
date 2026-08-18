@@ -1,19 +1,31 @@
-# Gradle / Android Studio
+# ===== Gradle / Android Studio =====
 build/
 .idea/
 .gradle/
 *.iml
 signing.gradle
+captures/
+navigation/
+*.log
 
-# Eclipse
+# ===== Eclipse =====
 bin/
 gen/
 .settings/
 .classpath
 .project
 
-# Android
+# ===== Android =====
 local.properties
+apk/
+*.apk
+*.ap_
+*.aab
 
-# Java
+# ===== Java =====
 *.class
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
