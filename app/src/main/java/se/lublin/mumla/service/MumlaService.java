@@ -101,18 +101,29 @@ public class MumlaService extends HumlaService implements
     };
 
     /** The view representing the hot corner. */
+        /** The view representing the hot corner. */
     private MumlaHotCorner mHotCorner;
-    private MumlaHotCorner.MumlaHotCornerListener mHotCornerListener = new MumlaHotCorner.MumlaHotCornerListener() {
-        @Override
-        public void onHotCornerDown() {
-            onTalkKeyDown();
-        }
+    private MumlaHotCorner.MumlaHotCornerListener mHotCornerListener =
+        new MumlaHotCorner.MumlaHotCornerListener() {
+            @Override
+            public void onHotCornerDown() {
+                onTalkKeyDown();
+            }
 
-        @Override
-        public void onHotCornerUp() {
-            onTalkKeyUp();
+            @Override
+            public void onHotCornerUp() {
+                onTalkKeyUp();
+            }
+        };
+
+    @Override
+    public short[] getRecordingBuffer() {
+        if (mHumlaService != null) {
+            return mHumlaService.getRecordingBuffer();
         }
-    };
+        return null;
+    }
+
 
     private BroadcastReceiver mTalkReceiver;
 
