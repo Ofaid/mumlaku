@@ -84,6 +84,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import se.lublin.mumla.view.SingleVisualizeView;
 import info.guardianproject.netcipher.proxy.OrbotHelper;
 import se.lublin.humla.IHumlaService;
 import se.lublin.humla.model.Server;
@@ -139,6 +140,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
+private SingleVisualizeView mVisualizerBaru;
 
     // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
@@ -301,6 +303,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         mSettings = Settings.getInstance(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        vmVisualizerBaru = findViewById(R.id.visualizer);
 
         mVisualizerView = findViewById(R.id.visualizer_view);
 

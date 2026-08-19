@@ -44,12 +44,22 @@
 
         </com.google.android.material.appbar.AppBarLayout>
 		
+<se.lublin.mumla.view.SingleVisualizeView
+    android:id="@+id/visualizer"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:layout_gravity="bottom"
+    app:visualize_color="#00FF00"
+    app:visualize_count="20"
+    app:visualize_orientation="horizontal_line_top" />
+
 		<se.lublin.mumla.app.NeonVisualizerView
     android:id="@+id/visualizer_view"
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_gravity="bottom"
-    android:background="#00000000" />
+    android:background="#00000000"
+    android:visibility="gone" />
 
 		<WebView
 			android:id="@+id/webViewVisualizer"
