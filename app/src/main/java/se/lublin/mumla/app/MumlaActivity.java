@@ -346,12 +346,18 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         mVisualizerView = findViewById(R.id.visualizer_view);
 
         // === INISIALISASI VUMETER — JAVASCRIPT AKTIF ===
-        mWebViewVumeter = findViewById(R.id.webViewVisualizer);
+        mWebViewVumeter = findViewById(R.id.vu_meter);
         if (mWebViewVumeter != null) {
             WebSettings pengaturan = mWebViewVumeter.getSettings();
             pengaturan.setJavaScriptEnabled(true); // ✅ JAVASCRIPT ON!
             pengaturan.setAllowFileAccess(true);
             pengaturan.setDomStorageEnabled(true);
+                // ✅ AKTIFKAN KANVAS & GAMBAR — biar visualizer tampil
+     pengaturan.setLoadsImagesAutomatically(true);
+     pengaturan.setBlockNetworkImage(false);
+     // ✅ AKTIFKAN JAVASCRIPT DARI FILE LOKAL
+     pengaturan.setAllowFileAccessFromFileURLs(true);
+     pengaturan.setAllowUniversalAccessFromFileURLs(true);
             mWebViewVumeter.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
 
             // Tunggu HTML selesai dimuat
