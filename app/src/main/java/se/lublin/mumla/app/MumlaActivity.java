@@ -114,6 +114,7 @@ import se.lublin.mumla.util.HumlaServiceFragment;
 import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
 import se.lublin.mumla.app.NeonVisualizerView;
+import se.lublin.mumla.view.SingleVisualizeView;
 
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
