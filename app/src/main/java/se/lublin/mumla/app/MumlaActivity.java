@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*edit ke3 — Ganti data uji jadi data mikrofon asli */
+/*edit ke3 — Sambungkan VuMeter HTML, data dari sistem suara asli, PTT aman */
 package se.lublin.mumla.app;
 
 import static java.util.Objects.requireNonNull;
@@ -49,6 +49,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
+import android.webkit.WebViewClient;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -140,17 +141,32 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
+    // === VUMETER WEBVIEW ===
+    private WebView mWebViewVumeter;
+    private boolean mVumeterReady = false;
+    private boolean mIsTalking = false; // Status PTT
+
     // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
     private final Runnable mVisualizerUpdater = new Runnable() {
         @Override
         public void run() {
+            // Kirim data ke NeonVisualizerView lama
             if (mVisualizerView != null) {
                 byte[] data = ambilDataSuaraDariLayanan();
                 if (data != null) {
                     mVisualizerView.updateVisualizer(data);
                 }
             }
+
+            // === KIRIM DATA KE VUMETER HTML ===
+            if (mVumeterReady && mWebViewVumeter != null && mIsTalking) {
+                byte[] data = ambilDataSuaraDariLayanan();
+                if (data != null) {
+                    kirimDataKeVumeter(data);
+                }
+            }
+
             mVisualizerHandler.postDelayed(this, 50);
         }
     };
@@ -160,26 +176,50 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
      * Menggunakan metode yang sudah tersedia di IMumlaService.
      */
     private byte[] ambilDataSuaraDariLayanan() {
-        if (mService == null) return null;
+        if (mService == null || !mIsTalking) return null; // Hanya saat PTT ditekan
 
         try {
-            // Cek apakah layanan punya metode ambil data gelombang suara
             short[] dataGelombang = mService.getRecordingBuffer();
             if (dataGelombang == null || dataGelombang.length == 0) return null;
 
-            // Ubah short[] → byte[] sesuai format yang dibutuhkan visualizer
-            int panjang = Math.min(dataGelombang.length, 64);
+            // Ambil 10 nilai pertama untuk VuMeter (5 kiri + 5 kanan)
+            int panjang = Math.min(10, dataGelombang.length);
             byte[] hasil = new byte[panjang];
             for (int i = 0; i < panjang; i++) {
-                // Ubah rentang -32768..32767 → -128..127
-                hasil[i] = (byte) (dataGelombang[i] >> 8);
+                // Ubah rentang -32768..32767 → 0..255
+                int nilai = (dataGelombang[i] >> 8) + 128;
+                hasil[i] = (byte) Math.max(0, Math.min(255, nilai));
             }
             return hasil;
 
         } catch (NoSuchMethodError e) {
-            // Jika metode belum tersedia di versi ini, kembalikan null (tidak tampil apa-apa)
-            Log.w(TAG, "Metode getRecordingBuffer belum tersedia di layanan", e);
+            Log.w(TAG, "Metode getRecordingBuffer belum tersedia", e);
             return null;
+        }
+    }
+
+    /**
+     * 📤 Kirim data ke VuMeter.html lewat JavaScript
+     */
+    private void kirimDataKeVumeter(byte[] data) {
+        if (data == null || data.length < 10) return;
+
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < 10; i++) {
+            if (i > 0) json.append(",");
+            json.append(data[i] & 0xFF);
+        }
+        json.append("]");
+
+        mWebViewVumeter.evaluateJavascript("updateVisualizer(" + json + ");", null);
+    }
+
+    /**
+     * 🔄 Reset VuMeter ke nol saat PTT dilepas
+     */
+    private void resetVumeter() {
+        if (mVumeterReady && mWebViewVumeter != null) {
+            mWebViewVumeter.evaluateJavascript("resetVisualizer();", null);
         }
     }
 
@@ -304,11 +344,30 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
         mVisualizerView = findViewById(R.id.visualizer_view);
 
-        WebView webView = findViewById(R.id.webViewVisualizer);
-        WebSettings pengaturan = webView.getSettings();
-        pengaturan.setJavaScriptEnabled(true);
-        pengaturan.setAllowFileAccess(true);
-        webView.loadUrl("file:///android_asset/VuMeter.html");
+        // === INISIALISASI VUMETER WEBVIEW ===
+        mWebViewVumeter = findViewById(R.id.webViewVisualizer);
+        if (mWebViewVumeter != null) {
+            WebSettings pengaturan = mWebViewVumeter.getSettings();
+            pengaturan.setJavaScriptEnabled(true);
+            pengaturan.setAllowFileAccess(true);
+            pengaturan.setDomStorageEnabled(true);
+            mWebViewVumeter.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
+
+            // Tunggu HTML selesai dimuat
+            mWebViewVumeter.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    super.onPageFinished(view, url);
+                    mVumeterReady = true;
+                    Log.d(TAG, "VuMeter HTML siap!");
+                }
+            });
+
+            // Muat file VuMeter.html
+            mWebViewVumeter.loadUrl("file:///android_asset/VuMeter.html");
+        } else {
+            Log.w(TAG, "WebView tidak ditemukan di layout!");
+        }
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -373,9 +432,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             @Override
             public void onDrawerStateChanged(int newState) {
                 super.onDrawerStateChanged(newState);
-                if (getService() != null && getService().isConnected()) {
-                    // TODO: Sesuaikan dengan cara yang benar untuk cek status bicara
-                }
             }
 
             @Override
@@ -401,7 +457,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             String url = getIntent().getDataString();
             try {
                 Server server = MumbleURLParser.parseURL(url);
-                DialogFragment fragment = ServerEditFragment.createServerEditDialog(
+                DialogFragment fragment = ServerEditFragment.createServerServerDialog(
                         MumlaActivity.this, server, ServerEditFragment.Action.CONNECT_ACTION, true);
                 fragment.show(getSupportFragmentManager(), "url_edit");
             } catch (MalformedURLException e) {
@@ -492,19 +548,24 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
+    // === 🔑 PTT DITEKAN — AKTIFKAN VUMETER ===
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyDown();
+            mIsTalking = true; // ✅ Tandai sedang bicara
             return true;
         }
         return super.onKeyDown(keyCode, event);
     }
 
+    // === 🔑 PTT DILEPAS — MATIKAN VUMETER ===
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyUp();
+            mIsTalking = false; // ✅ Tandai berhenti bicara
+            resetVumeter(); // ✅ Kembalikan VuMeter ke nol
             return true;
         }
         return super.onKeyUp(keyCode, event);
