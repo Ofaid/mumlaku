@@ -308,7 +308,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         WebSettings pengaturan = webView.getSettings();
         pengaturan.setJavaScriptEnabled(true);
         pengaturan.setAllowFileAccess(true);
-        webView.loadUrl("file:///android_asset/visualizer-bersih.html");
+        webView.loadUrl("file:///android_asset/VuMeter.html");
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
