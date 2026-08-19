@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*edit ke3 — Sambungkan VuMeter HTML, data dari sistem suara asli, PTT aman */
+/*edit ke3 — Sambungkan VuMeter HTML, data dari sistem suara asli, PTT aman, perbaiki nama metode */
 package se.lublin.mumla.app;
 
 import static java.util.Objects.requireNonNull;
@@ -141,7 +141,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
 
-    // === VUMETER WEBVIEW ===
+    // === VUMETER WEBVIEW — JAVASCRIPT + JSON ===
     private WebView mWebViewVumeter;
     private boolean mVumeterReady = false;
     private boolean mIsTalking = false; // Status PTT
@@ -159,7 +159,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
                 }
             }
 
-            // === KIRIM DATA KE VUMETER HTML ===
+            // === KIRIM DATA KE VUMETER HTML PAKAI JSON ===
             if (mVumeterReady && mWebViewVumeter != null && mIsTalking) {
                 byte[] data = ambilDataSuaraDariLayanan();
                 if (data != null) {
@@ -173,7 +173,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     /**
      * 🎙️ Ambil data suara asli dari layanan — TANPA membuat AudioRecord baru!
-     * Menggunakan metode yang sudah tersedia di IMumlaService.
      */
     private byte[] ambilDataSuaraDariLayanan() {
         if (mService == null || !mIsTalking) return null; // Hanya saat PTT ditekan
@@ -182,7 +181,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             short[] dataGelombang = mService.getRecordingBuffer();
             if (dataGelombang == null || dataGelombang.length == 0) return null;
 
-            // Ambil 10 nilai pertama untuk VuMeter (5 kiri + 5 kanan)
+            // Ambil 10 nilai pertama untuk VuMeter
             int panjang = Math.min(10, dataGelombang.length);
             byte[] hasil = new byte[panjang];
             for (int i = 0; i < panjang; i++) {
@@ -199,11 +198,12 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     }
 
     /**
-     * 📤 Kirim data ke VuMeter.html lewat JavaScript
+     * 📤 Kirim data ke VuMeter.html PAKAI JSON + JAVASCRIPT
      */
     private void kirimDataKeVumeter(byte[] data) {
         if (data == null || data.length < 10) return;
 
+        // === UBAH DATA JADI FORMAT JSON ===
         StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < 10; i++) {
             if (i > 0) json.append(",");
@@ -211,6 +211,7 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         }
         json.append("]");
 
+        // === KIRIM KE HTML LEWAT JAVASCRIPT ===
         mWebViewVumeter.evaluateJavascript("updateVisualizer(" + json + ");", null);
     }
 
@@ -344,11 +345,11 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
         mVisualizerView = findViewById(R.id.visualizer_view);
 
-        // === INISIALISASI VUMETER WEBVIEW ===
+        // === INISIALISASI VUMETER — JAVASCRIPT AKTIF ===
         mWebViewVumeter = findViewById(R.id.webViewVisualizer);
         if (mWebViewVumeter != null) {
             WebSettings pengaturan = mWebViewVumeter.getSettings();
-            pengaturan.setJavaScriptEnabled(true);
+            pengaturan.setJavaScriptEnabled(true); // ✅ JAVASCRIPT ON!
             pengaturan.setAllowFileAccess(true);
             pengaturan.setDomStorageEnabled(true);
             mWebViewVumeter.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
@@ -430,11 +431,6 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             }
 
             @Override
-            public void onDrawerStateChanged(int newState) {
-                super.onDrawerStateChanged(newState);
-            }
-
-            @Override
             public void onDrawerOpened(View drawerView) {
                 supportInvalidateOptionsMenu();
             }
@@ -457,7 +453,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
             String url = getIntent().getDataString();
             try {
                 Server server = MumbleURLParser.parseURL(url);
-                DialogFragment fragment = ServerEditFragment.createServerServerDialog(
+                // ✅ SUDAH DIPERBAIKI — createServerEditDialog
+                DialogFragment fragment = ServerEditFragment.createServerEditDialog(
                         MumlaActivity.this, server, ServerEditFragment.Action.CONNECT_ACTION, true);
                 fragment.show(getSupportFragmentManager(), "url_edit");
             } catch (MalformedURLException e) {
