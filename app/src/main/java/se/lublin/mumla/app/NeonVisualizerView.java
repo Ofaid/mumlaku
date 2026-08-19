@@ -11,6 +11,11 @@ public class NeonVisualizerView extends View {
     private byte[] mWaveform;
     private Paint mPaint = new Paint();
 
+    // ==============================================
+    // === DITAMBAHKAN: Penanda apakah visualizer sedang aktif
+    // ==============================================
+    private boolean mIsVisualizing = false;
+
     public NeonVisualizerView(Context context) { super(context); init(); }
     public NeonVisualizerView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
     public NeonVisualizerView(Context context, AttributeSet attrs, int defStyle) { super(context, attrs, defStyle); init(); }
@@ -19,9 +24,44 @@ public class NeonVisualizerView extends View {
         mPaint.setColor(Color.CYAN);
         mPaint.setStrokeWidth(2f);
         mPaint.setAntiAlias(true);
+
+        // ==============================================
+        // === DITAMBAHKAN: Sembunyi dulu saat baru buka aplikasi
+        // ==============================================
+        setVisibility(View.GONE);
+    }
+
+    // ==============================================
+    // === DITAMBAHKAN: Nyalakan & munculkan visualizer
+    // ==============================================
+    public void startVisualizer() {
+        mIsVisualizing = true;
+        setVisibility(View.VISIBLE);
+    }
+
+    // ==============================================
+    // === DITAMBAHKAN: Hentikan & bersihkan visualizer
+    // ==============================================
+    public void stopVisualizer() {
+        mIsVisualizing = false;
+        mWaveform = null;    // Hapus data supaya tidak ada sisa garis
+        invalidate();        // Segera hapus gambar di layar
+        setVisibility(View.GONE);
+    }
+
+    // ==============================================
+    // === DITAMBAHKAN: Sama dengan stopVisualizer(), dipanggil saat lepas PTT
+    // ==============================================
+    public void clearVisualizer() {
+        stopVisualizer();
     }
 
     public void updateVisualizer(byte[] waveform) {
+        // ==============================================
+        // === DITAMBAHKAN: Hanya terima data kalau sedang aktif
+        // ==============================================
+        if (!mIsVisualizing) return;
+
         this.mWaveform = waveform;
         invalidate(); // Minta menggambar ulang
     }
