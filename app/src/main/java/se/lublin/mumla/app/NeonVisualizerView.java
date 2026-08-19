@@ -6,15 +6,15 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
-
+/* Satu batang mendatar*/
 public class NeonVisualizerView extends View {
     private byte[] mWaveform;
     private final Paint mPaint = new Paint();
 
-    // === PENGATURAN — GAMPANG DIUBAH KAPAN SAJA! ===
-    private static final int JUMLAH_BATANG = 3;      // 3 batang saja
-    private static final float TEBAL_BATANG = 8f;    // Tebal & jelas
-    private static final float KEPEKAAN = 0.8f;      // Tinggi gerakan
+    // === SEMUA SUDAH SESUAI KEMAUANMU ===
+    private static final float TEBAL_GARIS = 12f;       // Tebal & jelas
+    private static final float KEPEKAAN = 3.0f;         // Peka — naik nada langsung memanjang
+    private static final float BATAS_MAKSIMAL = 0.9f;   // Tidak keluar layar
 
     public NeonVisualizerView(Context context) { super(context); init(); }
     public NeonVisualizerView(Context context, AttributeSet attrs) { super(context, attrs); init(); }
@@ -22,7 +22,7 @@ public class NeonVisualizerView extends View {
 
     private void init() {
         mPaint.setColor(Color.RED);           // 🔴 Merah
-        mPaint.setStrokeWidth(TEBAL_BATANG); // Tebal
+        mPaint.setStrokeWidth(TEBAL_GARIS);  // Tebal
         mPaint.setAntiAlias(true);
     }
 
@@ -34,17 +34,25 @@ public class NeonVisualizerView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (mWaveform == null || mWaveform.length < JUMLAH_BATANG) return;
+        if (mWaveform == null || mWaveform.length < 3) return;
 
         int width = getWidth();
         int height = getHeight();
+        int centerX = width / 2;       // Di tengah layar
         int centerY = height / 2;
-        float jarakAntar = (float) width / (JUMLAH_BATANG + 1);
 
-        for (int i = 0; i < JUMLAH_BATANG; i++) {
-            float amplitude = (mWaveform[i] + 128) / 256f * height * KEPEKAAN;
-            float x = jarakAntar * (i + 1);
-            canvas.drawLine(x, centerY - amplitude/2, x, centerY + amplitude/2, mPaint);
-        }
+        // === AMBIL NOMOR 3 — YANG SUDAH TERBUKTI HIDUP ===
+        int index = 2;
+        float amplitude = (mWaveform[index] + 128) / 256f * width * KEPEKAAN;
+
+        // === BATASI BIAR TIDAK KELUAR LAYAR ===
+        float maksimal = width * BATAS_MAKSIMAL;
+        if (amplitude > maksimal) amplitude = maksimal;
+
+        // === GARIS MENDATAR DARI TENGAH KE KANAN ===
+        float mulaiDari = centerX;
+        float sampaiKe = centerX + amplitude / 2;
+
+        canvas.drawLine(mulaiDari, centerY, sampaiKe, centerY, mPaint);
     }
 }
