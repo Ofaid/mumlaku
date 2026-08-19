@@ -45,11 +45,11 @@
         </com.google.android.material.appbar.AppBarLayout>
 		
 		<se.lublin.mumla.app.NeonVisualizerView
-    android:id="@+id/visualizer_view"
+    android:id="@+id/vu_meter"
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_gravity="bottom"
-    android:background="#00000000" />
+    android:background="#80000000" />
 
 		<WebView
 			android:id="@+id/webViewVisualizer"
@@ -58,7 +58,7 @@
 			android:layout_marginHorizontal="16dp"
 			android:layout_marginTop="4dp"
 			android:layout_marginBottom="4dp"
-			android:background="#121212"  /> <!-- Tambah baris ini -->
+			android:background="#80ADD8E6"  /> <!-- Tambah baris ini -->
 		
 
         <FrameLayout
