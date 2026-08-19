@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VuMeter — Visualizer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    #vuMeter {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 5px;
+      margin: 12px auto;
+      height: 55px;
+      width: 290px;
+      position: relative;
+      z-index: 9997;
+      background: transparent;
+    }
+    .vuKiri, .vuKanan {
+      width: 12px;
+      max-height: 50px;
+      height: 8px;
+      background: linear-gradient(180deg, #222, #111);
+      border-radius: 4px;
+      transition: height 0.07s ease-out;
+      box-shadow: 0 0 3px rgba(0,245,255,0.2);
+    }
+    .vuKiri.active {
+      background: linear-gradient(180deg, #00F5FF, #00FF88);
+      box-shadow: 0 0 8px #00F5FF, 0 0 12px rgba(0,255,136,0.4);
+    }
+    .vuKanan.active {
+      background: linear-gradient(180deg, #FF00FF, #FF8800);
+      box-shadow: 0 0 8px #FF00FF, 0 0 12px rgba(255,136,0,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div id="vuMeter">
+    <span class='vuKiri'></span><span class='vuKiri'></span><span class='vuKiri'></span><span class='vuKiri'></span><span class='vuKiri'></span>
+    <span style="width:10px;flex-shrink:0;"></span>
+    <span class='vuKanan'></span><span class='vuKanan'></span><span class='vuKanan'></span><span class='vuKanan'></span><span class='vuKanan'></span>
+  </div>
+
+  <script>
+    const batangKiri = document.querySelectorAll('.vuKiri');
+    const batangKanan = document.querySelectorAll('.vuKanan');
+    const JUMLAH_BATANG = 5;
+    const KEPEKAAN = 1.0;
+
+    // === DIPANGGIL DARI JAVA — TERIMA DATA SUARA ===
+    function updateVisualizer(dataArray) {
+      if (!dataArray || dataArray.length < 10) return;
+
+      // KIRI — Biru → Hijau Neon
+      for (let i = 0; i < JUMLAH_BATANG; i++) {
+        const nilai = (dataArray[i] / 255) * KEPEKAAN;
+        const tinggi = Math.max(8, nilai * 50);
+        batangKiri[i].style.height = tinggi + 'px';
+        batangKiri[i].classList.toggle('active', nilai > 0.08);
+      }
+
+      // KANAN — Ungu → Oranye Neon
+      for (let i = 0; i < JUMLAH_BATANG; i++) {
+        const idx = i + 5;
+        const nilai = (dataArray[idx] / 255) * KEPEKAAN;
+        const tinggi = Math.max(8, nilai * 50);
+        batangKanan[i].style.height = tinggi + 'px';
+        batangKanan[i].classList.toggle('active', nilai > 0.08);
+      }
+    }
+
+    // === KEMBALI KE NOL SAAT DIAM / LEPAS PTT ===
+    function resetVisualizer() {
+      [...batangKiri, ...batangKanan].forEach(bar => {
+        bar.style.height = '8px';
+        bar.classList.remove('active');
+      });
+    }
+  </script>
+</body>
+</html>
