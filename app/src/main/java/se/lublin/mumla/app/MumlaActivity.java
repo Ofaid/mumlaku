@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*edit ke3 — Ganti data uji jadi data mikrofon asli */
 package se.lublin.mumla.app;
 
 import static java.util.Objects.requireNonNull;
@@ -113,8 +112,6 @@ import se.lublin.mumla.service.MumlaService;
 import se.lublin.mumla.util.HumlaServiceFragment;
 import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
-import se.lublin.mumla.app.NeonVisualizerView;
-import se.lublin.mumla.view.SingleVisualizeView;
 
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
@@ -141,51 +138,57 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
-private SingleVisualizeView mVisualizerBaru;
+    private SingleVisualizeView mVisualizerBaru;
 
-    // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
     private final Runnable mVisualizerUpdater = new Runnable() {
         @Override
         public void run() {
-            if (mVisualizerView != null) {
+            if (mVisualizerView != null || mVisualizerBaru != null) {
                 byte[] data = ambilDataSuaraDariLayanan();
                 if (data != null) {
-                    mVisualizerView.updateVisualizer(data);
+                    if (mVisualizerView != null) mVisualizerView.updateVisualizer(data);
+                    if (mVisualizerBaru != null) {
+                        // Ubah byte[] → float[] rentang 0.0 ~ 1.0 untuk SingleVisualizeView
+                        float[] floatData = new float[data.length];
+                        for (int i = 0; i < data.length; i++) {
+                            floatData[i] = (data[i] & 0xFF) / 255.0f;
+                        }
+                        mVisualizerBaru.onFftDataCapture(floatData);
+                    }
                 }
             }
             mVisualizerHandler.postDelayed(this, 50);
         }
     };
 
-    /**
-     * 🎙️ Ambil data suara asli dari layanan — TANPA membuat AudioRecord baru!
-     * Menggunakan metode yang sudah tersedia di IMumlaService.
-     */
     private byte[] ambilDataSuaraDariLayanan() {
-        if (mService == null) return null;
-
-        try {
-            // Cek apakah layanan punya metode ambil data gelombang suara
-            short[] dataGelombang = mService.getRecordingBuffer();
-            if (dataGelombang == null || dataGelombang.length == 0) return null;
-
-            // Ubah short[] → byte[] sesuai format yang dibutuhkan visualizer
-            int panjang = Math.min(dataGelombang.length, 64);
-            byte[] hasil = new byte[panjang];
-            for (int i = 0; i < panjang; i++) {
-                // Ubah rentang -32768..32767 → -128..127
-                hasil[i] = (byte) (dataGelombang[i] >> 8);
+        // Coba ambil data asli dulu
+        if (mService != null) {
+            try {
+                short[] dataGelombang = mService.getRecordingBuffer();
+                if (dataGelombang != null && dataGelombang.length > 0) {
+                    int panjang = Math.min(dataGelombang.length, 64);
+                    byte[] hasil = new byte[panjang];
+                    for (int i = 0; i < panjang; i++) {
+                        hasil[i] = (byte) (dataGelombang[i] >> 8);
+                    }
+                    return hasil;
+                }
+            } catch (NoSuchMethodError e) {
+                Log.w(TAG, "Metode getRecordingBuffer belum tersedia, pakai data uji", e);
             }
-            return hasil;
-
-        } catch (NoSuchMethodError e) {
-            // Jika metode belum tersedia di versi ini, kembalikan null (tidak tampil apa-apa)
-            Log.w(TAG, "Metode getRecordingBuffer belum tersedia di layanan", e);
-            return null;
         }
-    }
 
+        // === DATA UJI: Garis pasti bergerak naik turun ===
+        byte[] dataUji = new byte[64];
+        long waktu = System.currentTimeMillis() / 100;
+        for (int i = 0; i < dataUji.length; i++) {
+            double nilai = Math.sin((waktu + i) * 0.15) * 80 + 80;
+            dataUji[i] = (byte) nilai;
+        }
+        return dataUji;
+    }
 
     private final List<HumlaServiceFragment> mServiceFragments = new ArrayList<HumlaServiceFragment>();
 
@@ -304,8 +307,8 @@ private SingleVisualizeView mVisualizerBaru;
         mSettings = Settings.getInstance(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        vmVisualizerBaru = findViewById(R.id.visualizer);
 
+        mVisualizerBaru = findViewById(R.id.visualizer);
         mVisualizerView = findViewById(R.id.visualizer_view);
 
         WebView webView = findViewById(R.id.webViewVisualizer);
@@ -377,9 +380,6 @@ private SingleVisualizeView mVisualizerBaru;
             @Override
             public void onDrawerStateChanged(int newState) {
                 super.onDrawerStateChanged(newState);
-                if (getService() != null && getService().isConnected()) {
-                    // TODO: Sesuaikan dengan cara yang benar untuk cek status bicara
-                }
             }
 
             @Override
@@ -500,6 +500,7 @@ private SingleVisualizeView mVisualizerBaru;
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyDown();
+            if (mVisualizerBaru != null) mVisualizerBaru.show();
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -509,6 +510,7 @@ private SingleVisualizeView mVisualizerBaru;
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         if (mService != null && keyCode == mSettings.getPushToTalkKey()) {
             mService.onTalkKeyUp();
+            if (mVisualizerBaru != null) mVisualizerBaru.hide();
             return true;
         }
         return super.onKeyUp(keyCode, event);
