@@ -88,6 +88,7 @@ public interface IHumlaService {
 
     /**
      * Mengambil data buffer rekaman mikrofon terbaru dalam format 16-bit PCM.
+     * CATATAN: TIDAK membuat AudioRecord baru — hanya membaca data yang sudah ada.
      * @return Array berisi data sampel suara, atau null jika belum tersedia/tidak sedang merekam.
      */
     short[] getRecordingBuffer();

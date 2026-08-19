@@ -63,30 +63,22 @@ import se.lublin.mumla.util.HtmlUtils;
 public class MumlaService extends HumlaService implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         MumlaConnectionNotification.OnActionListener,
-        MumlaReconnectNotification.OnActionListener, IMumlaService {
+        MumlaReconnectNotification.OnActionListener,
+        IMumlaService {
     private static final String TAG = MumlaService.class.getName();
 
-    /** Undocumented constant that permits a proximity-sensing wake lock. */
     public static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
-    public static final int TTS_THRESHOLD = 250; // Maximum number of characters to read
+    public static final int TTS_THRESHOLD = 250;
     public static final int RECONNECT_DELAY = 10000;
 
     private Settings mSettings;
     private MumlaConnectionNotification mNotification;
     private MumlaMessageNotification mMessageNotification;
     private MumlaReconnectNotification mReconnectNotification;
-    /** Channel view overlay. */
     private MumlaOverlay mChannelOverlay;
-    /** Proximity lock for handset mode. */
     private PowerManager.WakeLock mProximityLock;
-    /** Play sound when push to talk key is pressed */
     private boolean mPTTSoundEnabled;
-    /** Try to shorten spoken messages when using TTS */
     private boolean mShortTtsMessagesEnabled;
-    /**
-     * True if an error causing disconnection has been dismissed by the user.
-     * This should serve as a hint not to bother the user.
-     */
     private boolean mErrorShown;
     private List<IChatMessage> mMessageLog;
     private boolean mSuppressNotifications;
@@ -96,41 +88,36 @@ public class MumlaService extends HumlaService implements
         @Override
         public void onInit(int status) {
             if(status == TextToSpeech.ERROR)
-                logWarning(getString(R.string.tts_failed));
+                Log.w(TAG, getString(R.string.tts_failed));
         }
     };
 
-    /** The view representing the hot corner. */
-        /** The view representing the hot corner. */
     private MumlaHotCorner mHotCorner;
     private MumlaHotCorner.MumlaHotCornerListener mHotCornerListener =
-        new MumlaHotCorner.MumlaHotCornerListener() {
-            @Override
-            public void onHotCornerDown() {
-                onTalkKeyDown();
-            }
+            new MumlaHotCorner.MumlaHotCornerListener() {
+                @Override
+                public void onHotCornerDown() {
+                    onTalkKeyDown();
+                }
 
-            @Override
-            public void onHotCornerUp() {
-                onTalkKeyUp();
-            }
-        };
+                @Override
+                public void onHotCornerUp() {
+                    onTalkKeyUp();
+                }
+            };
 
+    // ✅ PERBAIKAN: Ambil buffer langsung dari kelas induk HumlaService
+    // TIDAK pakai mHumlaService yang tidak ada — TIDAK buat AudioRecord baru!
     @Override
     public short[] getRecordingBuffer() {
-        if (mHumlaService != null) {
-            return mHumlaService.getRecordingBuffer();
-        }
-        return null;
+        return super.getRecordingBuffer();
     }
-
 
     private BroadcastReceiver mTalkReceiver;
 
     private HumlaObserver mObserver = new HumlaObserver() {
         @Override
         public void onConnecting() {
-            // Remove old notification left from reconnect,
             if (mReconnectNotification != null) {
                 mReconnectNotification.hide();
                 mReconnectNotification = null;
@@ -171,18 +158,14 @@ public class MumlaService extends HumlaService implements
 
         @Override
         public void onUserConnected(IUser user) {
-            if (user.getTextureHash() != null &&
-                    user.getTexture() == null) {
-                // Request avatar data if available.
+            if (user.getTextureHash() != null && user.getTexture() == null) {
                 requestAvatar(user.getSession());
             }
         }
 
         @Override
         public void onUserStateUpdated(IUser user) {
-            if (user == null) {
-                return;
-            }
+            if (user == null) return;
 
             int selfSession;
             try {
@@ -193,7 +176,7 @@ public class MumlaService extends HumlaService implements
             }
 
             if (user.getSession() == selfSession) {
-                mSettings.setMutedAndDeafened(user.isSelfMuted(), user.isSelfDeafened()); // Update settings mute/deafen state
+                mSettings.setMutedAndDeafened(user.isSelfMuted(), user.isSelfDeafened());
                 if(mNotification != null) {
                     String contentText;
                     if (user.isSelfMuted() && user.isSelfDeafened())
@@ -208,23 +191,19 @@ public class MumlaService extends HumlaService implements
             }
 
             if (user.getTextureHash() != null && user.getTexture() == null) {
-                // Update avatar data if available.
                 requestAvatar(user.getSession());
             }
         }
 
         @Override
         public void onMessageLogged(IMessage message) {
-            // Split on / strip all HTML tags.
             Document parsedMessage = Jsoup.parseBodyFragment(message.getMessage());
             String strippedMessage = parsedMessage.text();
 
             String ttsMessage;
             if(mShortTtsMessagesEnabled) {
                 for (Element anchor : parsedMessage.getElementsByTag("A")) {
-                    // Get just the domain portion of links
                     String href = anchor.attr("href");
-                    // Only shorten anchors without custom text
                     if (href != null && href.equals(anchor.text())) {
                         String urlHostname = HtmlUtils.getHostnameFromLink(href);
                         if (urlHostname != null) {
@@ -240,7 +219,6 @@ public class MumlaService extends HumlaService implements
             String formattedTtsMessage = getString(R.string.notification_message,
                     message.getActorName(), ttsMessage);
 
-            // Read if TTS is enabled, the message is less than threshold, is a text message, and not deafened
             if(mSettings.isTextToSpeechEnabled() &&
                     mTTS != null &&
                     formattedTtsMessage.length() <= TTS_THRESHOLD &&
@@ -249,7 +227,6 @@ public class MumlaService extends HumlaService implements
                 mTTS.speak(formattedTtsMessage, TextToSpeech.QUEUE_ADD, null);
             }
 
-            // TODO: create a customizable notification sieve
             if (mSettings.isChatNotifyEnabled()) {
                 mMessageNotification.show(message);
             }
@@ -304,25 +281,20 @@ public class MumlaService extends HumlaService implements
         super.onCreate();
         registerObserver(mObserver);
 
-        // Register for preference changes
         mSettings = Settings.getInstance(this);
         mPTTSoundEnabled = mSettings.isPttSoundEnabled();
         mShortTtsMessagesEnabled = mSettings.isShortTextToSpeechMessagesEnabled();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.registerOnSharedPreferenceChangeListener(this);
 
-        // Manually set theme to style overlay views
-        // XML <application> theme does NOT do this!
         setTheme(R.style.Theme_Mumla);
 
         mMessageLog = new ArrayList<>();
         mMessageNotification = new MumlaMessageNotification(MumlaService.this);
 
-        // Instantiate overlay view
         mChannelOverlay = new MumlaOverlay(this);
         mHotCorner = new MumlaHotCorner(this, mSettings.getHotCornerGravity(), mHotCornerListener);
 
-        // Set up TTS
         if(mSettings.isTextToSpeechEnabled())
             mTTS = new TextToSpeech(this, mTTSInitListener);
 
@@ -362,16 +334,6 @@ public class MumlaService extends HumlaService implements
 
     @Override
     public void onConnectionSynchronized() {
-        // TODO? We seem to be getting a RuntimeException here, from the call
-        //  to the superclass function (in HumlaService). In there,
-        //  mConnect.getSession() finds that isSynchronized==false and throws
-        //  NotSynchronizedException (which is re-thrown as the
-        //  RuntimeException). But how can it be !isSynchronized? -- A server
-        //  msg triggers HumlaConnection.messageServerSync(), which sets up
-        //  mSession and mSynchronized==true and then proceeds to call us from
-        //  a Runnable post()ed to a Handler. The reason could only be that
-        //  HumlaConnect.connect() or disconnect() is called again in the
-        //  middle of all this? And it's made possible by the Handler?
         try {
             super.onConnectionSynchronized();
         } catch (RuntimeException e) {
@@ -379,7 +341,6 @@ public class MumlaService extends HumlaService implements
             return;
         }
 
-        // Restore mute/deafen state
         if(mSettings.isMuted() || mSettings.isDeafened()) {
             setSelfMuteDeafState(mSettings.isMuted(), mSettings.isDeafened());
         }
@@ -393,7 +354,7 @@ public class MumlaService extends HumlaService implements
         if (mSettings.isHotCornerEnabled()) {
             mHotCorner.setShown(true);
         }
-        // Configure proximity sensor
+
         if (mSettings.isHandsetMode()) {
             setProximitySensorOn(true);
         }
@@ -407,28 +368,19 @@ public class MumlaService extends HumlaService implements
         } catch (IllegalArgumentException iae) {
         }
 
-        // Remove overlay if present.
         mChannelOverlay.hide();
-
         mHotCorner.setShown(false);
-
         setProximitySensorOn(false);
-
         clearMessageLog();
         mMessageNotification.dismiss();
     }
 
-    /**
-     * Called when the user makes a change to their preferences.
-     * Should update all preferences relevant to the service.
-     */
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Bundle changedExtras = new Bundle();
         boolean requiresReconnect = false;
         switch (key) {
             case Settings.PREF_INPUT_METHOD:
-                /* Convert input method defined in settings to an integer format used by Humla. */
                 int inputMethod = mSettings.getHumlaInputMethod();
                 changedExtras.putInt(HumlaService.EXTRAS_TRANSMIT_MODE, inputMethod);
                 mChannelOverlay.setPushToTalkShown(inputMethod == Constants.TRANSMIT_PUSH_TO_TALK);
@@ -436,7 +388,7 @@ public class MumlaService extends HumlaService implements
             case Settings.PREF_HANDSET_MODE:
                 setProximitySensorOn(isConnectionEstablished() && mSettings.isHandsetMode());
                 changedExtras.putInt(HumlaService.EXTRAS_AUDIO_STREAM, mSettings.isHandsetMode() ?
-                                     AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
+                        AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
                 break;
             case Settings.PREF_THRESHOLD:
                 changedExtras.putFloat(HumlaService.EXTRAS_DETECTION_THRESHOLD,
@@ -488,13 +440,11 @@ public class MumlaService extends HumlaService implements
             case Settings.PREF_FORCE_TCP:
             case Settings.PREF_USE_TOR:
             case Settings.PREF_DISABLE_OPUS:
-                // These are settings we flag as 'requiring reconnect'.
                 requiresReconnect = true;
                 break;
         }
         if (changedExtras.size() > 0) {
             try {
-                // Reconfigure the service appropriately.
                 requiresReconnect |= configureExtras(changedExtras);
             } catch (AudioException e) {
                 e.printStackTrace();
@@ -537,8 +487,6 @@ public class MumlaService extends HumlaService implements
 
     @Override
     public void onOverlayToggled() {
-        // Ditch notification shade/panel to make overlay presence/permission request visible.
-        // But on Android 12 that's no longer allowed.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             Intent close = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
             getApplicationContext().sendBroadcast(close);
@@ -602,7 +550,6 @@ public class MumlaService extends HumlaService implements
     @Override
     public void markErrorShown() {
         mErrorShown = true;
-        // Dismiss the reconnection prompt if a reconnection isn't in progress.
         if (mReconnectNotification != null && !isReconnecting()) {
             mReconnectNotification.hide();
             mReconnectNotification = null;
@@ -614,32 +561,24 @@ public class MumlaService extends HumlaService implements
         return mErrorShown;
     }
 
-    /**
-     * Called when a user presses a talk key down (i.e. when they want to talk).
-     * Accounts for talk logic if toggle PTT is on.
-     */
     @Override
     public void onTalkKeyDown() {
         if(isConnectionEstablished()
                 && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
             if (!mSettings.isPushToTalkToggle() && !isTalking()) {
-                setTalkingState(true); // Start talking
+                setTalkingState(true);
             }
         }
     }
 
-    /**
-     * Called when a user releases a talk key (i.e. when they do not want to talk).
-     * Accounts for talk logic if toggle PTT is on.
-     */
     @Override
     public void onTalkKeyUp() {
         if(isConnectionEstablished()
                 && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
             if (mSettings.isPushToTalkToggle()) {
-                setTalkingState(!isTalking()); // Toggle talk state
+                setTalkingState(!isTalking());
             } else if (isTalking()) {
-                setTalkingState(false); // Stop talking
+                setTalkingState(false);
             }
         }
     }
@@ -656,17 +595,6 @@ public class MumlaService extends HumlaService implements
         }
     }
 
-    /**
-     * Sets whether or not notifications should be suppressed.
-     *
-     * It's typically a good idea to do this when the main activity is foreground, so that the user
-     * is not bombarded with redundant alerts.
-     *
-     * <b>Chat notifications are NOT suppressed.</b> They may be if a chat indicator is added in the
-     * activity itself. For now, the user may disable chat notifications manually.
-     *
-     * @param suppressNotifications true if Mumla is to disable notifications.
-     */
     @Override
     public void setSuppressNotifications(boolean suppressNotifications) {
         mSuppressNotifications = suppressNotifications;
@@ -687,7 +615,6 @@ public class MumlaService extends HumlaService implements
     @Override
     public Message sendUserTextMessage(int session, String message) {
         Message msg = super.sendUserTextMessage(session, message);
-
         mMessageLog.add(new IChatMessage.TextMessage(msg));
         return msg;
     }
@@ -695,7 +622,6 @@ public class MumlaService extends HumlaService implements
     @Override
     public Message sendChannelTextMessage(int channel, String message, boolean tree) {
         Message msg = super.sendChannelTextMessage(channel, message, tree);
-
         mMessageLog.add(new IChatMessage.TextMessage(msg));
         return msg;
     }

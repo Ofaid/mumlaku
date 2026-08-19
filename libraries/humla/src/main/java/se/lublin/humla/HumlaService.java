@@ -104,6 +104,10 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     public static final String EXTRAS_LOCAL_IGNORE_HISTORY = "local_ignore_history";
     public static final String EXTRAS_ENABLE_PREPROCESSOR = "enable_preprocessor";
     public static final String EXTRAS_ECHO_CANCELLATION_METHOD = "echo_cancellation_method";
+    public static final String EXTRAS_AUDIO_SOURCE = "audio_source";
+    public static final String EXTRAS_AUDIO_STREAM = "audio_stream";
+    public static final String EXTRAS_FRAMES_PER_PACKET = "frames_per_packet";
+
 
     private Server mServer;
     private boolean mAutoReconnect;
@@ -653,7 +657,10 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     private ModelHandler getModelHandler() throws NotSynchronizedException {
         if (!isSynchronized())
             throw new NotSynchronizedException();
-        if (mModelHandler == null && mConnectionState == CONNECTED)
+       // if (mModelHandler == null && mConnectionState == CONNECTED)
+           
+        if (mModelHandler == null && mConnectionState == ConnectionState.CONNECTED)
+
             throw new RuntimeException("Model handler should always be instantiated while connected!");
         return mModelHandler;
     }
