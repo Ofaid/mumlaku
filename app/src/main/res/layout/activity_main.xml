@@ -59,7 +59,7 @@
 			android:layout_marginTop="4dp"
 			android:layout_marginBottom="4dp"
 			android:background="#121212" 
-			android:visibility="gone" /> <!-- Tambah baris ini -->
+			android:visibility="visible" /> <!-- Tambah baris ini -->
 		
 
         <FrameLayout
