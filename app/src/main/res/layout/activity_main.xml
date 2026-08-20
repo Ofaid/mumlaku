@@ -49,7 +49,8 @@
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_gravity="bottom"
-    android:background="#80000000" />
+    android:background="#80000000" 
+  android:visibility="visible" />  
 
 		<WebView
 			android:id="@+id/vu_meter"
@@ -58,7 +59,9 @@
 			android:layout_marginHorizontal="16dp"
 			android:layout_marginTop="4dp"
 			android:layout_marginBottom="4dp"
-			android:background="#80ADD8E6"  /> <!-- Tambah baris ini -->
+			android:background="#80ADD8E6" 
+			android:visibility="gone" />
+		
 		
 
         <FrameLayout
