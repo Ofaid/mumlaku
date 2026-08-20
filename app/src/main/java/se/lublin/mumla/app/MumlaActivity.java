@@ -141,8 +141,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
-   private NierVisualizerManager mVisualizerManager;
-   private SurfaceView mVisualizerSurface;
+    private NierVisualizerManager mVisualizerManager;
+    private SurfaceView mVisualizerSurface;
 
     // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
@@ -306,10 +306,27 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // === NEON VISUALIZER — TETAP DIPAKAI ===
         mVisualizerView = findViewById(R.id.visualizer_view);
-mVisualizerSurface = findViewById(R.id.visualizerSurface);
-mVisualizerManager = new NierVisualizerManager();
-mVisualizerManager.init(0);
+
+        // === NIER VISUALIZER — DENGAN PENGECEKAN AGAR TIDAK FC ===
+        try {
+            mVisualizerSurface = findViewById(R.id.visualizerSurface);
+            if (mVisualizerSurface != null) {
+                mVisualizerManager = new NierVisualizerManager();
+                int status = mVisualizerManager.init(0);
+                if (status != NierVisualizerManager.SUCCESS) {
+                    Log.w(TAG, "Nier Visualizer init gagal, matikan");
+                    mVisualizerManager.release();
+                    mVisualizerManager = null;
+                    mVisualizerSurface = null;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error init Nier Visualizer", e);
+            mVisualizerManager = null;
+            mVisualizerSurface = null;
+        }
 
         WebView webView = findViewById(R.id.webViewVisualizer);
         WebSettings pengaturan = webView.getSettings();
@@ -462,30 +479,30 @@ mVisualizerManager.init(0);
     }
 
     @Override
-protected void onDestroy() {
-    // Hentikan handler dulu
-    if (mVisualizerHandler != null) {
-        mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
+    protected void onDestroy() {
+        // Hentikan handler dulu
+        if (mVisualizerHandler != null) {
+            mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
+        }
+
+        // Bersihkan Nier Visualizer — DENGAN PENGECEKAN
+        if (mVisualizerManager != null) {
+            mVisualizerManager.release();
+            mVisualizerManager = null;
+        }
+
+        // Bersihkan preferensi
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.unregisterOnSharedPreferenceChangeListener(this);
+
+        // Tutup database — DENGAN PENGECEKAN
+        if (mDatabase != null) {
+            mDatabase.close();
+        }
+
+        // Paling akhir — WAJIB DI BAWAH!
+        super.onDestroy();
     }
-
-    // Bersihkan visualizer
-    if (mVisualizerManager != null) {
-        mVisualizerManager.release();
-        mVisualizerManager = null;
-    }
-
-    // Bersihkan preferensi
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-    preferences.unregisterOnSharedPreferenceChangeListener(this);
-
-    // Tutup database
-    if (mDatabase != null) {
-        mDatabase.close();
-    }
-
-    // Paling akhir — WAJIB DI BAWAH!
-    super.onDestroy();
-}
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
