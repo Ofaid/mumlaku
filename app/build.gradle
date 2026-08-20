@@ -1,24 +1,8 @@
-/*
- * Copyright (C) 2014 Andrew Comminos
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 buildscript {
     repositories {
         mavenCentral()
         google()
+        maven { url 'https://jitpack.io' }  // ✅ TAMBAH
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.2'
@@ -29,6 +13,7 @@ apply plugin: 'com.android.application'
 repositories {
     mavenCentral()
     google()
+    maven { url 'https://jitpack.io' }  // ✅ TAMBAH — WAJIB!
 }
 
 def signingFile = file 'signing.gradle'
@@ -37,8 +22,12 @@ def signingBetaFile = file 'signing-beta.gradle'
 if (signingBetaFile.exists()) apply from: signingBetaFile
 
 allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }  // ✅ TAMBAH — BIAR PASTI!
+    }
     tasks.withType(JavaCompile) {
-        // TODO include deprecations at some point, but currently they are *many*
         options.compilerArgs << "-Xlint:all" << "-Xlint:-deprecation" << "-Xlint:-dep-ann"
     }
 }
@@ -56,24 +45,18 @@ android {
         archivesName = "mumla"
     }
 
-    // gradle8: Need to enable this when defaultConfig below contains some custom BuildConfig
     buildFeatures {
         buildConfig = true
     }
 
     def gitDescribe = providers.exec {
-        // Need --always because there are no tags in gitlab ci (right?)
         commandLine "git", "describe", "--tags", "--match", "[0-9]*.[0-9]*.[0-9]*", "--always"
     }.standardOutput.asText.get().trim()
 
     defaultConfig {
         minSdkVersion 21
         targetSdk 36
-
         applicationId "se.lublin.mumla"
-        // Remember: app_news_items_vX_Y_Z in src/main/res/values/strings.xml
-        // and NEWS_ITEMS in src/main/res/java/se/lublin/mumla/app/DialogUtils.java
-        //     code:XYYZZbb (bb for build)
         versionCode 3070300
         versionName gitDescribe
 
@@ -89,12 +72,9 @@ android {
             dimension "release"
             applicationId "se.lublin.mumla"
         }
-        
-        
     }
 
     buildTypes {
-        // signingConfig beta will override
         release {
             if (android.hasProperty("signingConfigs")) {
                 if (signingConfigs.hasProperty("release")) {
@@ -114,16 +94,15 @@ android {
             }
         }
     }
+
     lint {
         abortOnError = true
-        // InvalidPackage is spongycastle-related
         disable 'InvalidPackage', 'MissingTranslation'
         explainIssues = true
         ignoreWarnings = false
         quiet = false
     }
-    // betas may be released every minute
-    // TODO? dynamic stuff, have to rebuild a lot
+
     applicationVariants.all { variant ->
         if (variant.flavorName == "beta") {
             variant.outputs.each { output ->
@@ -131,7 +110,6 @@ android {
             }
         }
     }
-
 }
 
 dependencies {
@@ -146,6 +124,8 @@ dependencies {
     implementation 'androidx.preference:preference:1.2.1'
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'info.guardianproject.netcipher:netcipher:2.1.0'
-implementation 'com.android.billingclient:billing:7.1.1'
+    implementation 'com.android.billingclient:billing:7.1.1'
 
+    // ✅ NIER VISUALIZER — TAMBAHAN BARU!
+    implementation 'com.github.bogerchan:Nier-Visualizer:0.1.3'
 }
