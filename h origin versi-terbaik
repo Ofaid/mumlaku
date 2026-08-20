@@ -1,0 +1,29 @@
+[33m7c13ee77[m[33m ([m[1;32mcoba-visualizer-ptt[m[33m)[m Sambungkan PTT: muncul tekan, hilang lepas
+[33m133e3049[m[33m ([m[1;32mnew-visualizer[m[33m)[m Perbaiki lengkap: hide PTT + data uji bergerak
+[33ma312a2f9[m Tambah visualizer garis tunggal
+[33meeebe781[m Pakai versi visualizer PTT dari HP
+[33md77b2d79[m Visualizer nyala hanya saat PTT ditekan
+[33mb1abe8ad[m Perbaiki visualizer layar putih: siap alat sekali, ikut PTT
+[33m4617068b[m Merge branch 'new-visualizer' of github.com:Ofaid/mumlaku into new-visualizer
+[33m076b4523[m[33m ([m[1;32mcoba-visualizer-mikrofon[m[33m)[m Perbaiki lengkap visualizer baca mikrofon
+[33m4270d3f6[m Pasang lengkap visualizer
+[33m908a9336[m Gabungkan perbaikan visualizer dari new-visualizer
+[33m59fcaef8[m Update visualizer-bersih.html
+[33m8b141b6b[m Create visualizer-bersih.html
+[33m57852a99[m Tambah visualizer
+[33m3d1d2434[m Simpan semua: tambah visualizer
+[33me950603d[m Tambah visualizer
+[33m2b326714[m Ubah mode awal jadi PTT
+[33mf337457a[m Style pressed PTT button that was lost, enlarge font slightly
+[33mc21f9d24[m Revise toggle PTT button preference wording
+[33m22d3a945[m Issue #158 - Hide PTT when muted.
+[33m447c6062[m Issue #139 - Update Jumble to block the audio input thread when PTT is inactive.
+[33m12075913[m Merge pull request #144 from tony2001/resizable_ptt_button
+[33m80051390[m add setting to change PTT button height
+[33meaebaec8[m Don't turn off toggled PTT when drawer is opened.
+[33m24a18596[m Better CardView visuals. Fixed DialogFragment background colour on 2.3 devices.
+[33m56702e13[m Connection check for PTT sound, update PTT sound ivar on service startup.
+[33m1dcbfbd8[m Fixed PTT selection highlight on tablets.
+[33m683fe05e[m Added PTT state update on Jumble callback, making talk state changes from toggling and hot corners apparent.
+[33m249da004[m Stop redundant calls to setTalkingState with hardware PTT.
+[33m52894327[m Implemented proper PTT in overlay.
