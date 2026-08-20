@@ -60,7 +60,10 @@
 			android:layout_marginBottom="4dp"
 			android:background="#121212" 
 			android:visibility="visible" /> <!-- Tambah baris ini -->
-		
+		<SurfaceView
+    android:id="@+id/visualizerSurface"
+    android:layout_width="match_parent"
+    android:layout_height="60dp" />
 
         <FrameLayout
             android:id="@+id/content_frame"
