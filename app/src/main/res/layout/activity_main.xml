@@ -45,14 +45,14 @@
         </com.google.android.material.appbar.AppBarLayout>
 		
 		<se.lublin.mumla.app.NeonVisualizerView
-    android:id="@+id/vu_meter"
+    android:id="@+id/visualizer_view"
     android:layout_width="match_parent"
     android:layout_height="60dp"
     android:layout_gravity="bottom"
     android:background="#80000000" />
 
 		<WebView
-			android:id="@+id/webViewVisualizer"
+			android:id="@+id/vu_meter"
 			android:layout_width="match_parent"
 			android:layout_height="50dp"
 			android:layout_marginHorizontal="16dp"
