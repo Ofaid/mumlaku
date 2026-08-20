@@ -113,7 +113,9 @@ import se.lublin.mumla.util.HumlaServiceFragment;
 import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
 import se.lublin.mumla.app.NeonVisualizerView;
-
+import me.bogerchan.niervisualizer.NierVisualizerManager;
+import me.bogerchan.niervisualizer.renderer.circle.CircleRenderer;
+import android.view.SurfaceView;
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
         FavouriteServerListFragment.ServerConnectHandler, HumlaServiceProvider, DatabaseProvider,
@@ -139,6 +141,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
+   private NierVisualizerManager mVisualizerManager;
+   private SurfaceView mVisualizerSurface;
 
     // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
@@ -303,6 +307,9 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         setContentView(R.layout.activity_main);
 
         mVisualizerView = findViewById(R.id.visualizer_view);
+mVisualizerSurface = findViewById(R.id.visualizerSurface);
+mVisualizerManager = new NierVisualizerManager();
+mVisualizerManager.init(0);
 
         WebView webView = findViewById(R.id.webViewVisualizer);
         WebSettings pengaturan = webView.getSettings();
@@ -455,13 +462,30 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     }
 
     @Override
-    protected void onDestroy() {
+protected void onDestroy() {
+    // Hentikan handler dulu
+    if (mVisualizerHandler != null) {
         mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        preferences.unregisterOnSharedPreferenceChangeListener(this);
-        mDatabase.close();
-        super.onDestroy();
     }
+
+    // Bersihkan visualizer
+    if (mVisualizerManager != null) {
+        mVisualizerManager.release();
+        mVisualizerManager = null;
+    }
+
+    // Bersihkan preferensi
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+    preferences.unregisterOnSharedPreferenceChangeListener(this);
+
+    // Tutup database
+    if (mDatabase != null) {
+        mDatabase.close();
+    }
+
+    // Paling akhir — WAJIB DI BAWAH!
+    super.onDestroy();
+}
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
