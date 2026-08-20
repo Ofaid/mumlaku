@@ -656,7 +656,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     private ModelHandler getModelHandler() throws NotSynchronizedException {
         if (!isSynchronized())
             throw new NotSynchronizedException();
-        if (mModelHandler == null && mConnectionState == CONNECTED)
+        if (mModelHandler == null && mConnectionState == ConnectionState.CONNECTED)
             throw new RuntimeException("Model handler should always be instantiated while connected!");
         return mModelHandler;
     }
