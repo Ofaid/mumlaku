@@ -113,7 +113,9 @@ import se.lublin.mumla.util.HumlaServiceFragment;
 import se.lublin.mumla.util.HumlaServiceProvider;
 import se.lublin.mumla.util.MumlaTrustStore;
 import se.lublin.mumla.app.NeonVisualizerView;
-
+import me.bogerchan.niervisualizer.NierVisualizerManager;
+import me.bogerchan.niervisualizer.renderer.circle.CircleRenderer;
+import android.view.SurfaceView;
 
 public class MumlaActivity extends AppCompatActivity implements ListView.OnItemClickListener,
         FavouriteServerListFragment.ServerConnectHandler, HumlaServiceProvider, DatabaseProvider,
@@ -139,6 +141,8 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     private AlertDialog mConnectingDialog;
     private AlertDialog mErrorDialog;
     private NeonVisualizerView mVisualizerView;
+    private NierVisualizerManager mVisualizerManager;
+    private SurfaceView mVisualizerSurface;
 
     // Handler untuk pembaruan visualizer
     private final Handler mVisualizerHandler = new Handler(Looper.getMainLooper());
@@ -302,7 +306,27 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // === NEON VISUALIZER — TETAP DIPAKAI ===
         mVisualizerView = findViewById(R.id.visualizer_view);
+
+        // === NIER VISUALIZER — DENGAN PENGECEKAN AGAR TIDAK FC ===
+        try {
+            mVisualizerSurface = findViewById(R.id.visualizerSurface);
+            if (mVisualizerSurface != null) {
+                mVisualizerManager = new NierVisualizerManager();
+                int status = mVisualizerManager.init(0);
+                if (status != NierVisualizerManager.SUCCESS) {
+                    Log.w(TAG, "Nier Visualizer init gagal, matikan");
+                    mVisualizerManager.release();
+                    mVisualizerManager = null;
+                    mVisualizerSurface = null;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error init Nier Visualizer", e);
+            mVisualizerManager = null;
+            mVisualizerSurface = null;
+        }
 
         WebView webView = findViewById(R.id.webViewVisualizer);
         WebSettings pengaturan = webView.getSettings();
@@ -456,10 +480,27 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
 
     @Override
     protected void onDestroy() {
-        mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
+        // Hentikan handler dulu
+        if (mVisualizerHandler != null) {
+            mVisualizerHandler.removeCallbacks(mVisualizerUpdater);
+        }
+
+        // Bersihkan Nier Visualizer — DENGAN PENGECEKAN
+        if (mVisualizerManager != null) {
+            mVisualizerManager.release();
+            mVisualizerManager = null;
+        }
+
+        // Bersihkan preferensi
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         preferences.unregisterOnSharedPreferenceChangeListener(this);
-        mDatabase.close();
+
+        // Tutup database — DENGAN PENGECEKAN
+        if (mDatabase != null) {
+            mDatabase.close();
+        }
+
+        // Paling akhir — WAJIB DI BAWAH!
         super.onDestroy();
     }
 
