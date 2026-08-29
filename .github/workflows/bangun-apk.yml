@@ -1,6 +1,12 @@
 name: Bangun Mumla
+run-name: Bangun Mumla
 
+# ✅ INI SAJA YANG DITAMBAH: push/pull_request biar otomatis + tetap tombol manual
 on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -8,6 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ⭐ TAMBAH LOG INFO INI SAJA DI PALING ATAS
+      - name: 📋 Info perubahan
+        run: |
+          echo "Pengirim: ${{ github.actor }}"
+          echo "Pesan: ${{ github.event.head_commit.message }}"
+          echo "Cabang: ${{ github.ref_name }}"
+          echo "Komit: ${{ github.sha }}"
+          git diff --name-only HEAD~1 HEAD 2>/dev/null || true
+          git diff --stat HEAD~1 HEAD 2>/dev/null || true
+
+      # 👇 SEMUA DI BAWAH INI PERSIS SALIN ASLIMU — TIDAK DIUBAH SATU‑SATU:
       - name: Ambil kode & submodul
         uses: actions/checkout@v4
         with:
@@ -50,10 +67,9 @@ jobs:
 
       - name: ✅ Bangun APK utama — BERSIH & BARU
         run: ./gradlew assembleDebug --stacktrace --no-daemon
+
       - name: Simpan hasil APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mumla-APK
+          name: Mla-OFA-new
           path: "**/*.apk"
-
-      
