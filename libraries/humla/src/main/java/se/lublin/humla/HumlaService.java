@@ -80,7 +80,7 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     static {
         Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
     }
-
+/*perbaikan2*/
     public static final String ACTION_CONNECT = "se.lublin.humla.CONNECT";
     public static final String EXTRAS_SERVER = "server";
     public static final String EXTRAS_AUTO_RECONNECT = "auto_reconnect";
