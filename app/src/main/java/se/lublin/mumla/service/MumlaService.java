@@ -3,16 +3,16 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package se.lublin.mumla.service;
@@ -57,19 +57,20 @@ import se.lublin.mumla.service.ipc.TalkBroadcastReceiver;
 import se.lublin.mumla.util.HtmlUtils;
 
 /**
- * An extension of the Humla service with some added Mumla‑exclusive non‑standard Mumble features.
- * Created by andrew on 28/07/13.
+ * An extension of the Humla service with some added Mumla-exclusive non-standard Mumble features.
+ * Created by andrew on 28/07/13.
  */
 public class MumlaService extends HumlaService implements
-SharedPreferences.OnSharedPreferenceChangeListener,
-MumlaConnectionNotification.OnActionListener,
-MumlaReconnectNotification.OnActionListener,
-IMumlaService {
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        MumlaConnectionNotification.OnActionListener,
+        MumlaReconnectNotification.OnActionListener,
+        IMumlaService {
     private static final String TAG = MumlaService.class.getName();
 
-        public static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
-    public static final int TTD_THRESHOLD = 250;
-	public static final int RECONNECT_DELAY = 10000;
+    public static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
+    public static final int TTS_THRESHOLD = 250;
+    public static final int RECONNECT_DELAY = 10000;
+
     private Settings mSettings;
     private MumlaConnectionNotification mNotification;
     private MumlaMessageNotification mMessageNotification;
@@ -81,36 +82,32 @@ IMumlaService {
     private boolean mErrorShown;
     private List<IChatMessage> mMessageLog;
     private boolean mSuppressNotifications;
-	/*baru */
-    private AudioManager mAudioManager;
-    private AudioManager.OnAudioFocusChangeListener mFocusListener;
-    private boolean mAudioFocusHeld = false;
-	
+
     private TextToSpeech mTTS;
     private TextToSpeech.OnInitListener mTTSInitListener = new TextToSpeech.OnInitListener() {
         @Override
         public void onInit(int status) {
             if(status == TextToSpeech.ERROR)
-				
-                //Log.w(TAG, getString(R.string.tts_failed));
+                Log.w(TAG, getString(R.string.tts_failed));
         }
     };
 
     private MumlaHotCorner mHotCorner;
     private MumlaHotCorner.MumlaHotCornerListener mHotCornerListener =
-	new MumlaHotCorner.MumlaHotCornerListener() {
-		@Override
-		public void onHotCornerDown() {
-			onTalkKeyDown();
-		}
+            new MumlaHotCorner.MumlaHotCornerListener() {
+                @Override
+                public void onHotCornerDown() {
+                    onTalkKeyDown();
+                }
 
-		@Override
-		public void onHotCornerUp() {
-			onTalkKeyUp();
-		}
-	};
+                @Override
+                public void onHotCornerUp() {
+                    onTalkKeyUp();
+                }
+            };
 
     // ✅ PERBAIKAN: Ambil buffer langsung dari kelas induk HumlaService
+    // TIDAK pakai mHumlaService yang tidak ada — TIDAK buat AudioRecord baru!
     @Override
     public short[] getRecordingBuffer() {
         return super.getRecordingBuffer();
@@ -125,18 +122,21 @@ IMumlaService {
                 mReconnectNotification.hide();
                 mReconnectNotification = null;
             }
-            final String tor = mSettings.isTorEnabled() ? " (Tor)" : "";
+
+            final String tor = mSettings.isTorEnabled() ? " (Tor)" : "";
             mNotification = MumlaConnectionNotification.create(MumlaService.this,
-															   getString(R.string.mumlaConnecting) + tor, MumlaService.this);
+                    getString(R.string.mumlaConnecting) + tor,
+                    MumlaService.this);
             mNotification.show();
+
             mErrorShown = false;
         }
 
         @Override
         public void onConnected() {
             if (mNotification != null) {
-                final String tor = mSettings.isTorEnabled() ? " (Tor)" : "";
-                mNotification.setCustomContentText(getString(R.string.connected) + tor);
+                final String tor = mSettings.isTorEnabled() ? " (Tor)" : "";
+                mNotification.setCustomContentText(getString(R.string.connected) + tor);
                 mNotification.setActionsShown(true);
                 mNotification.show();
             }
@@ -149,27 +149,32 @@ IMumlaService {
                 mNotification = null;
             }
             if (e != null && !mSuppressNotifications) {
-                mReconnectNotification = MumlaReconnectNotification.show(MumlaService.this,
-																		 e.getMessage() + (mSettings.isTorEnabled() ? " (Tor)" : ""),
-																		 isReconnecting(), MumlaService.this);
+                mReconnectNotification =
+                        MumlaReconnectNotification.show(MumlaService.this,
+                                e.getMessage() + (mSettings.isTorEnabled() ? " (Tor)" : ""),
+                                isReconnecting(), MumlaService.this);
             }
         }
 
         @Override
         public void onUserConnected(IUser user) {
-            if (user.getTextureHash() != null && user.getTexture() == null)
+            if (user.getTextureHash() != null && user.getTexture() == null) {
                 requestAvatar(user.getSession());
+            }
         }
 
         @Override
         public void onUserStateUpdated(IUser user) {
             if (user == null) return;
+
             int selfSession;
-            try { selfSession = getSessionId(); }
-            catch (IllegalStateException e) {
-                Log.d(TAG, "exception in onUserStateUpdated: " + e);
+            try {
+                selfSession = getSessionId();
+            } catch (IllegalStateException e) {
+                Log.d(TAG, "exception in onUserStateUpdated: " + e);
                 return;
             }
+
             if (user.getSession() == selfSession) {
                 mSettings.setMutedAndDeafened(user.isSelfMuted(), user.isSelfDeafened());
                 if(mNotification != null) {
@@ -184,92 +189,97 @@ IMumlaService {
                     mNotification.show();
                 }
             }
-            if (user.getTextureHash() != null && user.getTexture() == null)
+
+            if (user.getTextureHash() != null && user.getTexture() == null) {
                 requestAvatar(user.getSession());
+            }
         }
 
         @Override
         public void onMessageLogged(IMessage message) {
             Document parsedMessage = Jsoup.parseBodyFragment(message.getMessage());
             String strippedMessage = parsedMessage.text();
+
             String ttsMessage;
             if(mShortTtsMessagesEnabled) {
                 for (Element anchor : parsedMessage.getElementsByTag("A")) {
                     String href = anchor.attr("href");
                     if (href != null && href.equals(anchor.text())) {
                         String urlHostname = HtmlUtils.getHostnameFromLink(href);
-                        if (urlHostname != null)
+                        if (urlHostname != null) {
                             anchor.text(getString(R.string.chat_message_tts_short_link, urlHostname));
+                        }
                     }
                 }
                 ttsMessage = parsedMessage.text();
             } else {
                 ttsMessage = strippedMessage;
             }
+
             String formattedTtsMessage = getString(R.string.notification_message,
-												   message.getActorName(), ttsMessage);
-            if(mSettings.isTextToSpeechEnabled() && mTTS != null
-			   && formattedTtsMessage.length() <= TTS_THRESHOLD
-			   && getSessionUser() != null && !getSessionUser().isSelfDeafened()) {
+                    message.getActorName(), ttsMessage);
+
+            if(mSettings.isTextToSpeechEnabled() &&
+                    mTTS != null &&
+                    formattedTtsMessage.length() <= TTS_THRESHOLD &&
+                    getSessionUser() != null &&
+                    !getSessionUser().isSelfDeafened()) {
                 mTTS.speak(formattedTtsMessage, TextToSpeech.QUEUE_ADD, null);
             }
-            if (mSettings.isChatNotifyEnabled())
+
+            if (mSettings.isChatNotifyEnabled()) {
                 mMessageNotification.show(message);
+            }
+
             mMessageLog.add(new IChatMessage.TextMessage(message));
         }
 
-        @Override public void onLogInfo(String message) {
+        @Override
+        public void onLogInfo(String message) {
             mMessageLog.add(new IChatMessage.InfoMessage(IChatMessage.InfoMessage.Type.INFO, message));
         }
-        @Override public void onLogWarning(String message) {
+
+        @Override
+        public void onLogWarning(String message) {
             mMessageLog.add(new IChatMessage.InfoMessage(IChatMessage.InfoMessage.Type.WARNING, message));
         }
-        @Override public void onLogError(String message) {
+
+        @Override
+        public void onLogError(String message) {
             mMessageLog.add(new IChatMessage.InfoMessage(IChatMessage.InfoMessage.Type.ERROR, message));
         }
-        @Override public void onPermissionDenied(String reason) {
-            if(mNotification != null && !mSuppressNotifications)
+
+        @Override
+        public void onPermissionDenied(String reason) {
+            if(mNotification != null && !mSuppressNotifications) {
                 mNotification.show();
+            }
         }
 
         @Override
         public void onUserTalkStateUpdated(IUser user) {
-            int selfSession = ‑1;
-            try { selfSession = getSessionId(); }
-            catch (IllegalStateException e) { Log.d(TAG, "exception: " + e); }
-            if (isConnectionEstablished() && user.getSession() == selfSession
-				&& getTransmitMode() == Constants.TRANSMIT_PUSH_TO_TALK
-				&& user.getTalkState() == TalkState.TALKING && mPTTSoundEnabled) {
+            int selfSession = -1;
+            try {
+                selfSession = getSessionId();
+            } catch (IllegalStateException e) {
+                Log.d(TAG, "exception in onUserTalkStateUpdated: " + e);
+            }
+
+            if (isConnectionEstablished() &&
+                    user.getSession() == selfSession &&
+                    getTransmitMode() == Constants.TRANSMIT_PUSH_TO_TALK &&
+                    user.getTalkState() == TalkState.TALKING &&
+                    mPTTSoundEnabled) {
                 AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-                audioManager.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, ‑1);
+                audioManager.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, -1);
             }
         }
     };
 
-    // =========================================================
-    // ✅ HANYA DITAMBAH BAGIAN INI — onCreate LENGKAP ASLI + FOKUS
-    // =========================================================
     @Override
     public void onCreate() {
         super.onCreate();
         registerObserver(mObserver);
-
-        // === BAGIAN BARU: SIAPKAN PENGELOLA FOKUS AUDIO ===
-        mAudioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        mFocusListener = new AudioManager.OnAudioFocusChangeListener() {
-            @Override public void onAudioFocusChange(int focusChange) {
-                if (focusChange == AudioManager.AUDIOFOCUS_LOSS ||
-                    focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                    if (isTalking()) setTalkingState(false);
-                    if (mAudioManager != null)
-                        mAudioManager.abandonAudioFocus(mFocusListener);
-                    mAudioFocusHeld = false;
-                } else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-                    mAudioFocusHeld = true;
-                }
-            }
-        };
-        // === AKHIR BAGIAN BARU ===
 
         mSettings = Settings.getInstance(this);
         mPTTSoundEnabled = mSettings.isPttSoundEnabled();
@@ -278,51 +288,17 @@ IMumlaService {
         preferences.registerOnSharedPreferenceChangeListener(this);
 
         setTheme(R.style.Theme_Mumla);
+
         mMessageLog = new ArrayList<>();
         mMessageNotification = new MumlaMessageNotification(MumlaService.this);
+
         mChannelOverlay = new MumlaOverlay(this);
         mHotCorner = new MumlaHotCorner(this, mSettings.getHotCornerGravity(), mHotCornerListener);
-        if (mSettings.isTextToSpeechEnabled())
+
+        if(mSettings.isTextToSpeechEnabled())
             mTTS = new TextToSpeech(this, mTTSInitListener);
+
         mTalkReceiver = new TalkBroadcastReceiver(this);
-    }
-
-    // ✅ TOMBOL DIPERBARUI: TAMBAH MINTA/LEPAS FOKUS — SISA TETAP ASLI
-    @Override
-    public void onTalkKeyDown() {
-        if(isConnectionEstablished()
-           && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
-            if (!mSettings.isPushToTalkToggle() && !isTalking()) {
-                // === BAGIAN BARU: MINTA FOKUS SEBELUM BICARA ===
-                int hasil = mAudioManager.requestAudioFocus(
-					mFocusListener, AudioManager.STREAM_VOICE_CALL,
-					AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE);
-                mAudioFocusHeld = (hasil == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
-                // === AKHIR BAGIAN BARU ===
-                setTalkingState(true);
-            }
-        }
-    }
-
-    @Override
-    public void onTalkKeyUp() {
-        if(isConnectionEstablished()
-           && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
-            if (mSettings.isPushToTalkToggle()) {
-                boolean sekarangBicara = !isTalking();
-                setTalkingState(sekarangBicara);
-                if (!sekarangBicara) {
-                    // === BAGIAN BARU: LEPAS FOKUS ===
-                    mAudioManager.abandonAudioFocus(mFocusListener);
-                    mAudioFocusHeld = false;
-                }
-            } else if (isTalking()) {
-                setTalkingState(false);
-                // === BAGIAN BARU: LEPAS FOKUS ===
-                mAudioManager.abandonAudioFocus(mFocusListener);
-                mAudioFocusHeld = false;
-            }
-        }
     }
 
     @Override
@@ -330,16 +306,8 @@ IMumlaService {
         return new MumlaBinder(this);
     }
 
-    // ✅ onDestroy: TAMBAH LEPAS FOKUS — SEMUA LAIN TETAP ASLI
     @Override
     public void onDestroy() {
-        // === BAGIAN BARU: PASTI LEPAS FOKUS ===
-        if (mAudioManager != null && mFocusListener != null) {
-            mAudioManager.abandonAudioFocus(mFocusListener);
-        }
-        mAudioFocusHeld = false;
-        // === AKHIR BAGIAN BARU ===
-
         if (mNotification != null) {
             mNotification.hide();
             mNotification = null;
@@ -369,39 +337,37 @@ IMumlaService {
         try {
             super.onConnectionSynchronized();
         } catch (RuntimeException e) {
-            Log.d(TAG, "exception in onConnectionSynchronized: " + e);
+            Log.d(TAG, "exception in onConnectionSynchronized: " + e);
             return;
         }
+
         if(mSettings.isMuted() || mSettings.isDeafened()) {
             setSelfMuteDeafState(mSettings.isMuted(), mSettings.isDeafened());
         }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             registerReceiver(mTalkReceiver, new IntentFilter(TalkBroadcastReceiver.BROADCAST_TALK), RECEIVER_EXPORTED);
         } else {
             registerReceiver(mTalkReceiver, new IntentFilter(TalkBroadcastReceiver.BROADCAST_TALK));
         }
+
         if (mSettings.isHotCornerEnabled()) {
             mHotCorner.setShown(true);
         }
+
         if (mSettings.isHandsetMode()) {
             setProximitySensorOn(true);
         }
     }
 
-    // ✅ onConnectionDisconnected: TAMBAH LEPAS FOKUS — SEMUA LAIN TETAP ASLI
     @Override
     public void onConnectionDisconnected(HumlaException e) {
-        // === BAGIAN BARU: LEPAS FOKUS ===
-        if (mAudioManager != null && mFocusListener != null) {
-            mAudioManager.abandonAudioFocus(mFocusListener);
-        }
-        mAudioFocusHeld = false;
-        // === AKHIR BAGIAN BARU ===
-
         super.onConnectionDisconnected(e);
         try {
             unregisterReceiver(mTalkReceiver);
-        } catch (IllegalArgumentException iae) { }
+        } catch (IllegalArgumentException iae) {
+        }
+
         mChannelOverlay.hide();
         mHotCorner.setShown(false);
         setProximitySensorOn(false);
@@ -422,11 +388,11 @@ IMumlaService {
             case Settings.PREF_HANDSET_MODE:
                 setProximitySensorOn(isConnectionEstablished() && mSettings.isHandsetMode());
                 changedExtras.putInt(HumlaService.EXTRAS_AUDIO_STREAM, mSettings.isHandsetMode() ?
-									 AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
+                        AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC);
                 break;
             case Settings.PREF_THRESHOLD:
                 changedExtras.putFloat(HumlaService.EXTRAS_DETECTION_THRESHOLD,
-									   mSettings.getDetectionThreshold());
+                        mSettings.getDetectionThreshold());
                 break;
             case Settings.PREF_HOT_CORNER_KEY:
                 mHotCorner.setGravity(mSettings.getHotCornerGravity());
@@ -445,18 +411,18 @@ IMumlaService {
                 break;
             case Settings.PREF_AMPLITUDE_BOOST:
                 changedExtras.putFloat(EXTRAS_AMPLITUDE_BOOST,
-									   mSettings.getAmplitudeBoostMultiplier());
+                        mSettings.getAmplitudeBoostMultiplier());
                 break;
             case Settings.PREF_HALF_DUPLEX:
                 changedExtras.putBoolean(EXTRAS_HALF_DUPLEX, mSettings.isHalfDuplex());
                 break;
             case Settings.PREF_PREPROCESSOR_ENABLED:
                 changedExtras.putBoolean(EXTRAS_ENABLE_PREPROCESSOR,
-										 mSettings.isPreprocessorEnabled());
+                        mSettings.isPreprocessorEnabled());
                 break;
             case Settings.PREF_ECHO_CANCELLATION_METHOD:
                 changedExtras.putString(EXTRAS_ECHO_CANCELLATION_METHOD,
-										mSettings.getEchoCancellationMethod());
+                        mSettings.getEchoCancellationMethod());
                 break;
             case Settings.PREF_PTT_SOUND:
                 mPTTSoundEnabled = mSettings.isPttSoundEnabled();
@@ -477,13 +443,14 @@ IMumlaService {
                 requiresReconnect = true;
                 break;
         }
-        if (changedExtras.size() > 0) {
+        if (changedExtras.size() > 0) {
             try {
                 requiresReconnect |= configureExtras(changedExtras);
-            } catch (AudioException ex) {
-                ex.printStackTrace();
+            } catch (AudioException e) {
+                e.printStackTrace();
             }
         }
+
         if (requiresReconnect && isConnectionEstablished()) {
             Toast.makeText(this, R.string.change_requires_reconnect, Toast.LENGTH_LONG).show();
         }
@@ -500,7 +467,8 @@ IMumlaService {
         }
     }
 
-    @Override public void onMuteToggled() {
+    @Override
+    public void onMuteToggled() {
         IUser user = getSessionUser();
         if (isConnectionEstablished() && user != null) {
             boolean muted = !user.isSelfMuted();
@@ -508,25 +476,32 @@ IMumlaService {
             setSelfMuteDeafState(muted, deafened);
         }
     }
-    @Override public void onDeafenToggled() {
+
+    @Override
+    public void onDeafenToggled() {
         IUser user = getSessionUser();
         if (isConnectionEstablished() && user != null) {
             setSelfMuteDeafState(!user.isSelfDeafened(), !user.isSelfDeafened());
         }
     }
 
-    @Override public void onOverlayToggled() {
+    @Override
+    public void onOverlayToggled() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             Intent close = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
             getApplicationContext().sendBroadcast(close);
         }
+
         if (!mChannelOverlay.isShown()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-				&& !android.provider.Settings.canDrawOverlays(getApplicationContext())) {
-                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-										 Uri.parse("package:" + getPackageName())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                Toast.makeText(this, R.string.grant_perm_draw_over_apps, Toast.LENGTH_LONG).show();
-                return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (!android.provider.Settings.canDrawOverlays(getApplicationContext())) {
+                    Intent showSetting = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + getPackageName()));
+                    showSetting.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(showSetting);
+                    Toast.makeText(this, R.string.grant_perm_draw_over_apps, Toast.LENGTH_LONG).show();
+                    return;
+                }
             }
             mChannelOverlay.show();
         } else {
@@ -534,40 +509,120 @@ IMumlaService {
         }
     }
 
-    @Override public void onReconnectNotificationDismissed() { mErrorShown = true; }
-    @Override public void reconnect() { connect(); }
-    @Override public void cancelReconnect() {
-        if (mReconnectNotification != null) { mReconnectNotification.hide(); mReconnectNotification = null; }
+    @Override
+    public void onReconnectNotificationDismissed() {
+        mErrorShown = true;
+    }
+
+    @Override
+    public void reconnect() {
+        connect();
+    }
+
+    @Override
+    public void cancelReconnect() {
+        if (mReconnectNotification != null) {
+            mReconnectNotification.hide();
+            mReconnectNotification = null;
+        }
         super.cancelReconnect();
     }
-    @Override public void setOverlayShown(boolean showOverlay) {
-        if(!mChannelOverlay.isShown()) mChannelOverlay.show(); else mChannelOverlay.hide();
-    }
-    @Override public boolean isOverlayShown() { return mChannelOverlay.isShown(); }
-    @Override public void clearChatNotifications() { mMessageNotification.dismiss(); }
-    @Override public void markErrorShown() {
-        mErrorShown = true;
-        if (mReconnectNotification != null && !isReconnecting())
-		{ mReconnectNotification.hide(); mReconnectNotification = null; }
-    }
-    @Override public boolean isErrorShown() { return mErrorShown; }
 
-    @Override public List<IChatMessage> getMessageLog() { return Collections.unmodifiableList(mMessageLog); }
-    @Override public void clearMessageLog() { if (mMessageLog != null) mMessageLog.clear(); }
-    @Override public void setSuppressNotifications(boolean suppressNotifications) { mSuppressNotifications = suppressNotifications; }
+    @Override
+    public void setOverlayShown(boolean showOverlay) {
+        if(!mChannelOverlay.isShown()) {
+            mChannelOverlay.show();
+        } else {
+            mChannelOverlay.hide();
+        }
+    }
+
+    @Override
+    public boolean isOverlayShown() {
+        return mChannelOverlay.isShown();
+    }
+
+    @Override
+    public void clearChatNotifications() {
+        mMessageNotification.dismiss();
+    }
+
+    @Override
+    public void markErrorShown() {
+        mErrorShown = true;
+        if (mReconnectNotification != null && !isReconnecting()) {
+            mReconnectNotification.hide();
+            mReconnectNotification = null;
+        }
+    }
+
+    @Override
+    public boolean isErrorShown() {
+        return mErrorShown;
+    }
+
+    @Override
+    public void onTalkKeyDown() {
+        if(isConnectionEstablished()
+                && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
+            if (!mSettings.isPushToTalkToggle() && !isTalking()) {
+                setTalkingState(true);
+            }
+        }
+    }
+
+    @Override
+    public void onTalkKeyUp() {
+        if(isConnectionEstablished()
+                && Settings.ARRAY_INPUT_METHOD_PTT.equals(mSettings.getInputMethod())) {
+            if (mSettings.isPushToTalkToggle()) {
+                setTalkingState(!isTalking());
+            } else if (isTalking()) {
+                setTalkingState(false);
+            }
+        }
+    }
+
+    @Override
+    public List<IChatMessage> getMessageLog() {
+        return Collections.unmodifiableList(mMessageLog);
+    }
+
+    @Override
+    public void clearMessageLog() {
+        if (mMessageLog != null) {
+            mMessageLog.clear();
+        }
+    }
+
+    @Override
+    public void setSuppressNotifications(boolean suppressNotifications) {
+        mSuppressNotifications = suppressNotifications;
+    }
 
     public static class MumlaBinder extends Binder {
-        private final IMumlaService mService;
-        private MumlaBinder(MumlaService service) { mService = service; }
-        public IMumlaService getService() { return mService; }
+        private final MumlaService mService;
+
+        private MumlaBinder(MumlaService service) {
+            mService = service;
+        }
+
+        public IMumlaService getService() {
+            return mService;
+        }
     }
 
-    @Override public Message sendUserTextMessage(int session, String message) {
+    @Override
+    public Message sendUserTextMessage(int session, String message) {
         Message msg = super.sendUserTextMessage(session, message);
-        mMessageLog.add(new IChatMessage.TextMessage(msg)); return msg;
+        mMessageLog.add(new IChatMessage.TextMessage(msg));
+        return msg;
     }
-    @Override public Message sendChannelTextMessage(int channel, String message, boolean tree) {
+
+    @Override
+    public Message sendChannelTextMessage(int channel, String message, boolean tree) {
         Message msg = super.sendChannelTextMessage(channel, message, tree);
-        mMessageLog.add(new IChatMessage.TextMessage(msg)); return msg;
+        mMessageLog.add(new IChatMessage.TextMessage(msg));
+        return msg;
     }
 }
