@@ -78,7 +78,9 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     private static final String TAG = HumlaService.class.getName();
 
     static {
-        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1)
+//Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
     }
 /*perbaikan2*/
     public static final String ACTION_CONNECT = "se.lublin.humla.CONNECT";
@@ -155,13 +157,15 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
                 try {
                     unregisterReceiver(this);
                 } catch (IllegalArgumentException e) {
-                    Log.e(TAG, "Error unregistering connectivity receiver: " + e.getMessage());
+                 Log.e(TAG, "Error unregistering connectivity receiver: " + e.getMessage());
+                    //Log.e(TAG, "Error unregistering connectivity receiver: " + e.getMessage());
                 }
                 return;
             }
 
+                
             ConnectivityManager cm = (ConnectivityManager) context.getSystemService(CONNECTIVITY_SERVICE);
-            NetworkInfo info = cm.getActiveNetworkInfo();
+            //NetworkInfo info = cm.getActiveNetworkInfo();
             if (info != null && info.isConnected()) {
                 Log.v(TAG, "Connectivity restored, attempting reconnect.");
                 connect();
