@@ -99,8 +99,12 @@ android {
         commandLine ndkExe, '-C', file('src/main/jni/').absolutePath
     }
 
-    tasks.withType(JavaCompile) {
-        compileTask -> compileTask.dependsOn ndkBuild
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn ndkBuild
+    options.compilerArgs << "-Xlint:all,-serial,-deprecation,-unchecked"
+}
+
+
     }
 
     lint {
