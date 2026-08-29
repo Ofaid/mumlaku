@@ -67,10 +67,9 @@ MumlaReconnectNotification.OnActionListener,
 IMumlaService {
     private static final String TAG = MumlaService.class.getName();
 
-    public static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
-    public static final int TTS_THRESHOLD = 250;
-    public static final int RECONNECT_DELAY = 10000;
-
+        public static final int PROXIMITY_SCREEN_OFF_WAKE_LOCK = 32;
+    public static final int TTD_THRESHOLD = 250;
+	public static final int RECONNECT_DELAY = 10000;
     private Settings mSettings;
     private MumlaConnectionNotification mNotification;
     private MumlaMessageNotification mMessageNotification;
@@ -86,13 +85,14 @@ IMumlaService {
     private AudioManager mAudioManager;
     private AudioManager.OnAudioFocusChangeListener mFocusListener;
     private boolean mAudioFocusHeld = false;
-	//======================+=======
+	
     private TextToSpeech mTTS;
     private TextToSpeech.OnInitListener mTTSInitListener = new TextToSpeech.OnInitListener() {
         @Override
         public void onInit(int status) {
             if(status == TextToSpeech.ERROR)
-                Log.w(TAG, getString(R.string.tts_failed));
+				
+                //Log.w(TAG, getString(R.string.tts_failed));
         }
     };
 
