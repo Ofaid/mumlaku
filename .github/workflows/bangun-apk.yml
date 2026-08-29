@@ -1,43 +1,39 @@
 name: Bangun Mumla
 run-name: Bangun Mumla
 
-# ✅ INI SAJA YANG DITAMBAH: push/pull_request biar otomatis + tetap tombol manual
 on:
   push:
-    branches: [ master ]
+    branches:
+      - Ofaid-new
   pull_request:
-    branches: [ master ]
+    branches:
+      - Ofaid-new
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # ⭐ TAMBAH LOG INFO INI SAJA DI PALING ATAS
-      - name: 📋 Info perubahan
+      - name: Info perubahan
         run: |
           echo "Pengirim: ${{ github.actor }}"
           echo "Pesan: ${{ github.event.head_commit.message }}"
           echo "Cabang: ${{ github.ref_name }}"
           echo "Komit: ${{ github.sha }}"
-          git diff --name-only HEAD~1 HEAD 2>/dev/null || true
-          git diff --stat HEAD~1 HEAD 2>/dev/null || true
 
-      # 👇 SEMUA DI BAWAH INI PERSIS SALIN ASLIMU — TIDAK DIUBAH SATU‑SATU:
       - name: Ambil kode & submodul
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Bersihkan sisa bangunan lama & cache
+      - name: Bersihkan cache
         run: |
           rm -rf ~/.gradle/caches
           rm -rf ~/.gradle/wrapper
           ./gradlew clean --no-daemon || true
 
-      - name: Siapkan Java 17
+      - name: Siapkan Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -47,7 +43,7 @@ jobs:
       - name: Siapkan Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Pasang NDK versi yang dibutuhkan
+      - name: Pasang NDK
         run: |
           ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393"
 
@@ -56,19 +52,19 @@ jobs:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
           echo "ndk.dir=$ANDROID_SDK_ROOT/ndk/25.1.8937393" >> local.properties
 
-      - name: Beri izin jalankan Gradle
+      - name: Beri izin Gradle
         run: chmod +x gradlew libraries/humla/gradlew
 
-      - name: 🔴 BANGUN SPONGYCASTLE DULU — WAJIB!
+      - name: Bangun SpongyCastle
         run: |
           cd libraries/humla/libs/humla-spongycastle
           ../../../../gradlew jar
           cd ../../../../
 
-      - name: ✅ Bangun APK utama — BERSIH & BARU
+      - name: Bangun APK
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Simpan hasil APK
+      - name: Simpan APK
         uses: actions/upload-artifact@v4
         with:
           name: Mla-OFA-new
