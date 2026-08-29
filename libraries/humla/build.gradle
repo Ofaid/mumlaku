@@ -84,10 +84,10 @@ android {
 
     // SATU TEMPAT SAJA — SEMUA PENGATURAN KOMPILASI
     tasks.withType(JavaCompile) {
-        compileTask.dependsOn ndkBuild
-        // Izinkan semua peringatan lama lewat TANPA HENTIKAN BANGUNAN
-        options.compilerArgs << "-Xlint:all,‑serial,‑deprecation,‑unchecked,‑lossy‑conversions"
-    }
+    it.dependsOn ndkBuild
+    options.compilerArgs << "-Xlint:all,-serial,-deprecation,-unchecked,-lossy-conversions"
+}
+
 
     lint {
         abortOnError = false          // ✅ KUNCI UTAMA: JANGAN BERHENTI KARENA PERINGATAN!
