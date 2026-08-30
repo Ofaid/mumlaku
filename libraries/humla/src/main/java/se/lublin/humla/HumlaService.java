@@ -891,7 +891,6 @@ public void setTalkingState(boolean talking) {
 }*/
 
 /*new*/
-@Override
 /*new*/
 @Override
 public void setTalkingState(boolean talking) {
@@ -912,6 +911,7 @@ public void setTalkingState(boolean talking) {
         Log.e(TAG, "🔴 mAudioHandler BELUM SIAP — TIDAK BISA ATUR MIC!");
     }
 }
+
 
 
 
