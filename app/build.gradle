@@ -2,18 +2,21 @@ buildscript {
     repositories {
         mavenCentral()
         google()
-        maven { url 'https://jitpack.io' }  // ✅ TAMBAH
+        maven { url 'https://jitpack.io' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21"
     }
 }
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 repositories {
     mavenCentral()
     google()
-    maven { url 'https://jitpack.io' }  // ✅ TAMBAH — WAJIB!
+    maven { url 'https://jitpack.io' }
 }
 
 def signingFile = file 'signing.gradle'
@@ -25,7 +28,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://jitpack.io' }  // ✅ TAMBAH — BIAR PASTI!
+        maven { url 'https://jitpack.io' }
     }
     tasks.withType(JavaCompile) {
         options.compilerArgs << "-Xlint:all" << "-Xlint:-deprecation" << "-Xlint:-dep-ann"
@@ -39,6 +42,9 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = "21"
     }
 
     base {
@@ -63,7 +69,7 @@ android {
         buildConfigField "long", "TIMESTAMP", System.currentTimeMillis() + "L"
         buildConfigField "String", "VERSIONTAG", "\"" + gitDescribe.split("-")[0] + "\""
 
-        testInstrumentationRunner "android.test.InstrumentationTestRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     flavorDimensions "release"
@@ -125,7 +131,5 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.13.1'
     implementation 'info.guardianproject.netcipher:netcipher:2.1.0'
     implementation 'com.android.billingclient:billing:7.1.1'
-
-    // ✅ NIER VISUALIZER — TAMBAHAN BARU!
     implementation 'com.github.bogerchan:Nier-Visualizer:0.1.3'
 }
