@@ -1,4 +1,4 @@
-package me.bogerchan.niervisualizer.util
+package se.lublin.niervisualizer.util
 
 import android.graphics.Canvas
 import android.graphics.Paint

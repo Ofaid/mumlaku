@@ -1,7 +1,7 @@
-package me.bogerchan.niervisualizer.renderer.columnar
+package se.lublin.niervisualizer.renderer.columnar
 
 import android.graphics.*
-import me.bogerchan.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.renderer.IRenderer
 
 /**
  * Created by BogerChan on 2017/11/26.

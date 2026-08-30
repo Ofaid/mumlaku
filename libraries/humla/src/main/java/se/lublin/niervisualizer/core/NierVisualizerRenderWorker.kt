@@ -1,4 +1,4 @@
-package me.bogerchan.niervisualizer.core
+package se.lublin.niervisualizer.core
 
 import android.graphics.Canvas
 import android.graphics.Rect
@@ -9,11 +9,11 @@ import android.os.Process
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import me.bogerchan.niervisualizer.renderer.IRenderer
-import me.bogerchan.niervisualizer.util.FpsHelper
-import me.bogerchan.niervisualizer.util.KeyFrameMaker
-import me.bogerchan.niervisualizer.util.NierThrottle
-import me.bogerchan.niervisualizer.util.clear
+import se.lublin.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.util.FpsHelper
+import se.lublin.niervisualizer.util.KeyFrameMaker
+import se.lublin.niervisualizer.util.NierThrottle
+import se.lublin.niervisualizer.util.clear
 import java.util.concurrent.atomic.AtomicInteger
 
 /**

@@ -1,12 +1,12 @@
-package me.bogerchan.niervisualizer
+package se.lublin.niervisualizer
 
 import android.media.audiofx.Visualizer
 import android.util.Log
 import android.view.SurfaceView
-import me.bogerchan.niervisualizer.core.NierConstants
-import me.bogerchan.niervisualizer.core.NierVisualizerRenderWorker
-import me.bogerchan.niervisualizer.core.PeriodWorker
-import me.bogerchan.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.core.NierConstants
+import se.lublin.niervisualizer.core.NierVisualizerRenderWorker
+import se.lublin.niervisualizer.core.PeriodWorker
+import se.lublin.niervisualizer.renderer.IRenderer
 import java.lang.ref.WeakReference
 
 /**

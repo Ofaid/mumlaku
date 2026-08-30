@@ -1,4 +1,4 @@
-package me.bogerchan.niervisualizer.core
+package se.lublin.niervisualizer.core
 
 import android.os.Handler
 import android.os.HandlerThread

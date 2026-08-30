@@ -1,9 +1,9 @@
-package me.bogerchan.niervisualizer.renderer.other
+package se.lublin.niervisualizer.renderer.other
 
 import android.graphics.*
 import android.view.animation.LinearInterpolator
-import me.bogerchan.niervisualizer.renderer.IRenderer
-import me.bogerchan.niervisualizer.util.NierAnimator
+import se.lublin.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.util.NierAnimator
 
 /**
  * Created by BogerChan on 2018/1/11.

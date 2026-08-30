@@ -1,4 +1,4 @@
-package me.bogerchan.niervisualizer.renderer
+package se.lublin.niervisualizer.renderer
 
 import android.graphics.Canvas
 import android.graphics.Rect

@@ -4,7 +4,7 @@
  * Licensed under the MIT license:
  * http://creativecommons.org/licenses/MIT/
  */
-package me.bogerchan.niervisualizer.renderer.line;
+package se.lublin.niervisualizer.renderer.line;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -13,7 +13,7 @@ import android.graphics.Rect;
 
 import org.jetbrains.annotations.NotNull;
 
-import me.bogerchan.niervisualizer.renderer.IRenderer;
+import se.lublin.niervisualizer.renderer.IRenderer;
 
 public class LineRenderer implements IRenderer {
     private Paint mPaint;

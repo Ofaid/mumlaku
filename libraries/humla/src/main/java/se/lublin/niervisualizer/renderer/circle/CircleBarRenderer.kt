@@ -1,12 +1,12 @@
-package me.bogerchan.niervisualizer.renderer.circle
+package se.lublin.niervisualizer.renderer.circle
 
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.view.animation.LinearInterpolator
-import me.bogerchan.niervisualizer.renderer.IRenderer
-import me.bogerchan.niervisualizer.util.NierAnimator
+import se.lublin.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.util.NierAnimator
 
 
 /**

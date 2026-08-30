@@ -1,4 +1,4 @@
-package me.bogerchan.niervisualizer.core
+package se.lublin.niervisualizer.core
 
 /**
  * Created by BogerChan on 2017/11/26.

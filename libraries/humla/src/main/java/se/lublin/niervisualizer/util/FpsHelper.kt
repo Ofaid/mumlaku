@@ -1,8 +1,8 @@
-package me.bogerchan.niervisualizer.util
+package se.lublin.niervisualizer.util
 
 import android.os.SystemClock
 import android.util.Log
-import me.bogerchan.niervisualizer.core.NierConstants
+import se.lublin.niervisualizer.core.NierConstants
 
 /**
  * A helper for scheduling the frame for rendering.

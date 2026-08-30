@@ -1,10 +1,10 @@
-package me.bogerchan.niervisualizer.renderer.columnar
+package se.lublin.niervisualizer.renderer.columnar
 
 import android.graphics.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.BounceInterpolator
-import me.bogerchan.niervisualizer.renderer.IRenderer
-import me.bogerchan.niervisualizer.util.NierAnimator
+import se.lublin.niervisualizer.renderer.IRenderer
+import se.lublin.niervisualizer.util.NierAnimator
 
 /**
  * Created by BogerChan on 2017/11/26.
