@@ -879,19 +879,10 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
     public boolean isTalking() {
         return mToggleInputMode.isTalkingOn();
     }
-/*****Ori
-    @Override
-    public void setTalkingState(boolean talking) {
-        mToggleInputMode.setTalkingOn(talking);
-    }*/
-    /*new */
-/*@Override
-public void setTalkingState(boolean talking) {
-    mToggleInputMode.setTalkingOn(talking);
-}*/
+
 
 /*new*/
-/*new*/
+
 @Override
 public void setTalkingState(boolean talking) {
     mToggleInputMode.setTalkingOn(talking);
