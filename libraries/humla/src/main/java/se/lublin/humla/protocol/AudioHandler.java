@@ -144,7 +144,7 @@ public class AudioHandler extends HumlaNetworkListener implements AudioInput.Aud
         setMaxBandwidth(maxBandwidth);
         setCodec(codec);
         setServerMuted(self.isMuted() || self.isLocalMuted() || self.isSuppressed());
-        startRecording();
+       // startRecording();
         // Ensure that if a bluetooth SCO connection is active, we use the VOICE_CALL stream.
         // This is required by Android for compatibility with SCO.
         mOutput.startPlaying(mBluetoothOn ? AudioManager.STREAM_VOICE_CALL : mAudioStream);
@@ -181,7 +181,7 @@ public void startRecording() throws AudioException {
      * Stops the recording AudioInput thread.
      * @throws AudioException if there was no thread recording.
      */
-    private void stopRecording() throws AudioException {
+    public void stopRecording() throws AudioException {
         synchronized (mInput) {
             if (mInput.isRecording()) {
                 mInput.stopRecording();
