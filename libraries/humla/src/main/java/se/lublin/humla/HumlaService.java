@@ -885,17 +885,28 @@ public class HumlaService extends Service implements IHumlaService, IHumlaSessio
         mToggleInputMode.setTalkingOn(talking);
     }*/
     /*new */
+/*@Override
+public void setTalkingState(boolean talking) {
+    mToggleInputMode.setTalkingOn(talking);
+}*/
+
+/*new*/
 @Override
 public void setTalkingState(boolean talking) {
     mToggleInputMode.setTalkingOn(talking);
     if (mAudioHandler != null) {
         if (talking) {
             mAudioHandler.startRecording();
+            Log.i(TAG, "PTT: Mulai rekam & pegang mic");
         } else {
             mAudioHandler.stopRecording();
+            Log.i(TAG, "PTT: Selesai — lepas mic, kembalikan izin");
         }
+    } else {
+        Log.e(TAG, "🔴 ERROR mAudioHandler BELUM SIAP — TIDAK BISA ATUR MIC!");
     }
 }
+
 
     /****stopnew*/
     @Override
