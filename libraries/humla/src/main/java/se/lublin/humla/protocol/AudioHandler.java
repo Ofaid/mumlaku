@@ -157,7 +157,17 @@ public class AudioHandler extends HumlaNetworkListener implements AudioInput.Aud
      * @throws AudioException if the input thread failed to initialize, or if a thread was already
      *                        recording.
      */
-    private void startRecording() throws AudioException {
+    /*new*/
+public void startRecording() throws AudioException {
+    synchronized (mInput) {
+        if (!mInput.isRecording()) {
+            mInput.startRecording();
+        } else {
+            throw new AudioException("Attempted to start recording while recording!");
+        }
+    }
+}
+   /* private void startRecording() throws AudioException {
         synchronized (mInput) {
             if (!mInput.isRecording()) {
                 mInput.startRecording();
@@ -165,7 +175,7 @@ public class AudioHandler extends HumlaNetworkListener implements AudioInput.Aud
                 throw new AudioException("Attempted to start recording while recording!");
             }
         }
-    }
+    }*/
 
     /**
      * Stops the recording AudioInput thread.
