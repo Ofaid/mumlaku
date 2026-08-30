@@ -43,27 +43,6 @@
                 app:title="@string/app_name" />
 
         </com.google.android.material.appbar.AppBarLayout>
-		
-		<se.lublin.mumla.app.NeonVisualizerView
-    android:id="@+id/visualizer_view"
-    android:layout_width="match_parent"
-    android:layout_height="60dp"
-    android:layout_gravity="bottom"
-    android:background="#00000000" />
-
-		<WebView
-			android:id="@+id/webViewVisualizer"
-			android:layout_width="match_parent"
-			android:layout_height="50dp"
-			android:layout_marginHorizontal="16dp"
-			android:layout_marginTop="4dp"
-			android:layout_marginBottom="4dp"
-			android:background="#121212" 
-			android:visibility="visible" /> <!-- Tambah baris ini -->
-		<SurfaceView
-    android:id="@+id/visualizerSurface"
-    android:layout_width="match_parent"
-    android:layout_height="60dp" />
 
         <FrameLayout
             android:id="@+id/content_frame"
