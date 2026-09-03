@@ -12,7 +12,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package se.lublin.mumla.channel;
@@ -160,54 +160,45 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
             mChannelListAdapter.updateChannels();
             mChannelListAdapter.notifyDataSetChanged();
         }
-@Override
-public void onUserTalkStateUpdated(IUser user) {
-    // Update indikator mic merah/putih di list (existing logic)
-    mChannelListAdapter.updateUserStates(user, mChannelView);
-    
-    if (getActivity() != null && !isDetached()) {
-        getActivity().runOnUiThread(() -> {
-            // 1. Batalkan timer hide lama agar tidak bentrok
-            bannerHideHandler.removeCallbacks(bannerHideRunnable);
-            
-            // 2. Cek status bicara menggunakan TalkState enum
-            boolean isStillTalking = false;
-            try {
-                TalkState state = user.getTalkState();
-                // Banner muncul jika state TALKING, SHOUTING, atau WHISPERING
-                isStillTalking = (state == TalkState.TALKING) || 
-                                 (state == TalkState.SHOUTING) || 
-                                 (state == TalkState.WHISPERING);
-            } catch (Exception e) {
-                Log.d(TAG, "Gagal cek TalkState: " + e.getMessage());
-                // Fallback aman: anggap masih bicara agar banner tidak hilang mendadak
-                isStillTalking = true; 
-            }
 
-            if (isStillTalking) {
-                // Update nama speaker hanya jika berubah (cegah flicker text)
-                String displayName = user.getName();
-                if (!displayName.equals(currentSpeakerName)) {
-                    currentSpeakerName = displayName;
-                    tvSpeakerName.setText(displayName);
-                }
-                
-                // Pastikan banner visible & opacity penuh saat bicara
-                if (bannerActiveSpeaker.getVisibility() != View.VISIBLE) {
-                    bannerActiveSpeaker.setVisibility(View.VISIBLE);
-                    bannerActiveSpeaker.setAlpha(1f);
-                }
-                
-                // 3. Reset timer 2 detik setiap ada update state bicara
-                // Selama user bicara, callback akan terus datang & me-reset timer ini
-                bannerHideHandler.postDelayed(bannerHideRunnable, 2000);
-            } else {
-                // User sudah PASSIVE (diam), sembunyikan banner SEGERA
-                bannerHideRunnable.run();
+        @Override
+        public void onUserStateUpdated(IUser user) {
+            mChannelListAdapter.updateUserStates(user, mChannelView);
+            getActivity().supportInvalidateOptionsMenu(); 
+        }
+
+        @Override
+        public void onUserTalkStateUpdated(IUser user) {
+            // Update indikator mic merah/putih di list (existing logic)
+            mChannelListAdapter.updateUserStates(user, mChannelView);
+            
+            // UPDATE BANNER NAMA SPEAKER AKTIF - STRATEGI AUTO-HIDE ONLY
+            if (getActivity() != null && !isDetached()) {
+                getActivity().runOnUiThread(() -> {
+                    // 1. Selalu batalkan timer hide lama saat ada event suara baru (reset countdown)
+                    bannerHideHandler.removeCallbacks(bannerHideRunnable);
+                    
+                    // 2. Update UI Nama Speaker hanya jika berubah (cegah flicker)
+                    String displayName = user.getName();
+                    if (!displayName.equals(currentSpeakerName)) {
+                        currentSpeakerName = displayName;
+                        tvSpeakerName.setText(displayName);
+                    }
+                    
+                    // 3. Pastikan Banner Visible & Opacity Penuh
+                    if (bannerActiveSpeaker.getVisibility() != View.VISIBLE) {
+                        bannerActiveSpeaker.setVisibility(View.VISIBLE);
+                        bannerActiveSpeaker.setAlpha(1f);
+                    }
+                    
+                    // 4. PASANG TIMER HIDE BARU (500ms setelah event terakhir)
+                    // Jika user masih bicara -> akan ada event baru -> timer di-reset lagi
+                    // Jika user diam -> tidak ada event -> timer selesai -> banner hilang
+                    bannerHideHandler.postDelayed(bannerHideRunnable, 2000);
+                });
             }
-        });
-    }
-}
+        }
+    };
 
     private BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
         @Override
@@ -471,7 +462,7 @@ public void onUserTalkStateUpdated(IUser user) {
         }
     }
 
-@Override
+    @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (Settings.PREF_SHOW_USER_COUNT.equals(key) && mChannelListAdapter != null) {
             mChannelListAdapter.setShowChannelUserCount(mSettings.shouldShowUserCount());
