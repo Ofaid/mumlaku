@@ -4,10 +4,10 @@ run-name: Bangun Mumla
 on:
   push:
     branches:
-      - Ofaid-new
+      - ptt-new
   pull_request:
     branches:
-      - Ofaid-new
+      - ptt-new
   workflow_dispatch:
 
 jobs:
@@ -67,5 +67,5 @@ jobs:
       - name: Simpan APK
         uses: actions/upload-artifact@v4
         with:
-          name: Mla-OFA-new
+          name: OFA-APK
           path: "**/*.apk"
