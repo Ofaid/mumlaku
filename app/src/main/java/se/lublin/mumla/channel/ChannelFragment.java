@@ -157,11 +157,7 @@ public class ChannelFragment extends HumlaServiceFragment implements SharedPrefe
 
         mTalkView = view.findViewById(R.id.pushtotalk_view);
         mTalkButton = (Button) view.findViewById(R.id.pushtotalk);
-        
-        
-        /*========Original=====""*/
-        
-       mTalkButton.setOnTouchListener(new View.OnTouchListener() {
+        /*========Original=====""*/ mTalkButton.setOnTouchListener(new View.OnTouchListener() {
 
 
 
