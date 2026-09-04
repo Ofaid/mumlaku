@@ -226,6 +226,7 @@ public void onUserTalkStateUpdated(IUser user) {
         });
     }
 }
+    }
 /*================*/
     private BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
         @Override
