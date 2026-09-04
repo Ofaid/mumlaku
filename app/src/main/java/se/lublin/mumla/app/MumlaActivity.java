@@ -264,6 +264,33 @@ public class MumlaActivity extends AppCompatActivity implements ListView.OnItemC
     protected void onCreate(Bundle savedInstanceState) {
         mSettings = Settings.getInstance(this);
 
+        // --- MODIFIKASI BARU: FORCE DEFAULT PTT SAAT PERTAMA KALI INSTALL ---
+        // Blok ini dieksekusi SEBELUM setContentView, sehingga nilai SharedPreferences
+        // sudah berubah menjadi "ptt" sebelum UI atau Service membaca konfigurasi audio.
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+if (!prefs.contains(Settings.PREF_INPUT_METHOD)) {
+    SharedPreferences.Editor editor = prefs.edit();
+    
+    // 1. Paksa Input Method jadi Push-to-Talk
+    editor.putString(Settings.PREF_INPUT_METHOD, Settings.ARRAY_INPUT_METHOD_PTT);
+    
+    // 2. AKTIFKAN TOGGLE (Sekali tekan nyala, sekali tekan mati) 
+    // Agar user bisa ngobrol sambil nyambi aktivitas tanpa tahan tombol
+    editor.putBoolean("togglePtt", true); 
+    
+    // 3. Opsional: Set Echo Cancellation ke none untuk latensi minimal saat PTT
+    editor.putString(Settings.PREF_ECHO_CANCELLATION_METHOD, "none");
+    
+    // 4. Tandai bahwa setup default pertama kali sudah selesai
+    editor.putBoolean("first_run_ptt_setup_done", true);
+    
+    // Gunakan commit() agar data pasti tersimpan sebelum UI dirender
+    editor.commit(); 
+}
+
+
+        // ---------------------------------------------------------------
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
