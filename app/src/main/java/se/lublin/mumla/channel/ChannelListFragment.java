@@ -73,10 +73,8 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
     private FrameLayout bannerActiveSpeaker;
     private TextView tvSpeakerName;
     private String currentSpeakerName = null; 
-   private View bannerActiveSpeaker; // atau mungkin mBannerSpeaker, speakerOverlay, dll?
- // atau mungkin txtSpeaker, labelNama, dll?
-private Handler bannerHideHandler;
-private Runnable bannerHideRunnable;
+   
+
 
     
     // Handler & Runnable untuk Auto-Hide Banner (Safety Net)
@@ -100,7 +98,7 @@ private Runnable bannerHideRunnable;
     private RecyclerView mChannelView;
     private ChannelListAdapter mChannelListAdapter;
     private ChatTargetProvider mTargetProvider;
-    private DatabaseProvider mDatabaseProvider;
+    private DatabaseProvider mDatabaseProviderl
     private ActionMode mActionMode;
     private Settings mSettings;
 
@@ -497,4 +495,5 @@ public void onUserTalkStateUpdated(IUser user) {
             mChannelListAdapter.setShowChannelUserCount(mSettings.shouldShowUserCount());
         }
     }
+}
 }
