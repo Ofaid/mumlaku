@@ -98,7 +98,7 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
     private RecyclerView mChannelView;
     private ChannelListAdapter mChannelListAdapter;
     private ChatTargetProvider mTargetProvider;
-    private DatabaseProvider mDatabaseProviderl
+    private DatabaseProvider mDatabaseProviderl;
     private ActionMode mActionMode;
     private Settings mSettings;
 
@@ -496,4 +496,4 @@ public void onUserTalkStateUpdated(IUser user) {
         }
     }
 }
-}
+    }}
