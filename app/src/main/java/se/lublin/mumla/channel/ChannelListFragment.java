@@ -167,55 +167,38 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
             getActivity().supportInvalidateOptionsMenu(); 
         }
 
-@Override
-public void onUserTalkStateUpdated(IUser user, boolean isTalking) {
-    try {
-        if (getActivity() != null && !isDetached()) {
-            getActivity().runOnUiThread(() -> {
-                // Tampilkan Banner saat status TALKING
-                if (isTalking) {
-                    if (bannerActiveSpeaker != null) {
-                        bannerActiveSpeaker.setVisibility(View.VISIBLE);
-                        bannerActiveSpeaker.setAlpha(1f);
-                    }
-
-                    // Update Nama Speaker
+        @Override
+        public void onUserTalkStateUpdated(IUser user) {
+            // Update indikator mic merah/putih di list (existing logic)
+            mChannelListAdapter.updateUserStates(user, mChannelView);
+            
+            // UPDATE BANNER NAMA SPEAKER AKTIF - STRATEGI AUTO-HIDE ONLY
+            if (getActivity() != null && !isDetached()) {
+                getActivity().runOnUiThread(() -> {
+                    // 1. Selalu batalkan timer hide lama saat ada event suara baru (reset countdown)
+                    bannerHideHandler.removeCallbacks(bannerHideRunnable);
+                    
+                    // 2. Update UI Nama Speaker hanya jika berubah (cegah flicker)
                     String displayName = user.getName();
-                    if (tvSpeakerName != null && !displayName.equals(currentSpeakerName)) {
+                    if (!displayName.equals(currentSpeakerName)) {
                         currentSpeakerName = displayName;
                         tvSpeakerName.setText(displayName);
                     }
-
-                    // PENTING: Hapus timer hide jika ada agar banner tetap tampil selama PTT aktif
-                    if (bannerHideHandler != null) {
-                        bannerHideHandler.removeCallbacks(bannerHideRunnable);
-                    }
-                } else {
-                    // SEMBUNYIKAN BANNER saat status PASIF / STOP TALKING
-                    if (bannerActiveSpeaker != null) {
-                        bannerActiveSpeaker.animate()
-                            .alpha(0f)
-                            .setDuration(200)
-                            .withEndAction(() -> {
-                                bannerActiveSpeaker.setVisibility(View.GONE);
-                                tvSpeakerName.setText("");
-                                currentSpeakerName = null;
-                            })
-                            .start();
+                    
+                    // 3. Pastikan Banner Visible & Opacity Penuh
+                    if (bannerActiveSpeaker.getVisibility() != View.VISIBLE) {
+                        bannerActiveSpeaker.setVisibility(View.VISIBLE);
+                        bannerActiveSpeaker.setAlpha(1f);
                     }
                     
-                    // Opsional: Jalankan timer safety net jika diperlukan
-                    // if (bannerHideHandler != null) {
-                    //     bannerHideHandler.postDelayed(bannerHideRunnable, 3000);
-                    // }
-                }
-            });
+                    // 4. PASANG TIMER HIDE BARU (500ms setelah event terakhir)
+                    // Jika user masih bicara -> akan ada event baru -> timer di-reset lagi
+                    // Jika user diam -> tidak ada event -> timer selesai -> banner hilang
+                    bannerHideHandler.postDelayed(bannerHideRunnable, 2000);
+                });
+            }
         }
-    } catch (Exception e) {
-        Log.e("PTT_Banner_List", "Error updating banner: " + e.getMessage());
-    }
-}
-
+    };
 
     private BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
         @Override
