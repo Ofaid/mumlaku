@@ -65,7 +65,7 @@ import se.lublin.mumla.R;
 import se.lublin.mumla.Settings;
 import se.lublin.mumla.db.DatabaseProvider;
 import se.lublin.mumla.util.HumlaServiceFragment;
-import se.lublin.humla.model.TalkState;
+
 public class ChannelListFragment extends HumlaServiceFragment implements OnChannelClickListener, OnUserClickListener, SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = ChannelListFragment.class.getName();
 
@@ -73,9 +73,6 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
     private FrameLayout bannerActiveSpeaker;
     private TextView tvSpeakerName;
     private String currentSpeakerName = null; 
-   
-
-
     
     // Handler & Runnable untuk Auto-Hide Banner (Safety Net)
     private final Handler bannerHideHandler = new Handler(Looper.getMainLooper());
@@ -98,7 +95,7 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
     private RecyclerView mChannelView;
     private ChannelListAdapter mChannelListAdapter;
     private ChatTargetProvider mTargetProvider;
-    private DatabaseProvider mDatabaseProviderl;
+    private DatabaseProvider mDatabaseProvider;
     private ActionMode mActionMode;
     private Settings mSettings;
 
@@ -169,65 +166,57 @@ public class ChannelListFragment extends HumlaServiceFragment implements OnChann
             mChannelListAdapter.updateUserStates(user, mChannelView);
             getActivity().supportInvalidateOptionsMenu(); 
         }
-/*======================*/
-    @Override
-public void onUserTalkStateUpdated(IUser user) {
-    // Update list user (jangan dihapus)
-    mChannelListAdapter.updateUserStates(user, mChannelView);
-    
-    if (getActivity() != null && !isDetached()) {
-        getActivity().runOnUiThread(() -> {
-            try {
-                // 1. Cek apakah user ini adalah DIRI SENDIRI (Local User)
-                // Gunakan getSessionId() dari service untuk validasi
-                int selfSession = getService().getSessionId();
-                boolean isMe = (user.getSession() == selfSession);
-                
-                if (isMe) {
-                    // 2. Ambil State Resmi dari Enum TalkState
-                    TalkState state = user.getTalkState();
-                    
-                    // 3. LOGIKA UTAMA: Banner hanya hidup saat TALKING atau SHOUTING
-                    if (state == TalkState.TALKING || state == TalkState.SHOUTING) {
-                        // TAMPILKAN BANNER
-                        // Pastikan nama variabel banner di Fragment Dok sesuai
-                        // Jika error "cannot resolve symbol", cek nama variabel banner Dok
-                        if (bannerActiveSpeaker != null) { 
-                            bannerActiveSpeaker.setVisibility(View.VISIBLE);
-                            bannerActiveSpeaker.setAlpha(1f);
-                        }
-                        
-                        // Update Nama Speaker
-                        String displayName = user.getName();
-                        if (tvSpeakerName != null && !displayName.equals(currentSpeakerName)) {
-                            currentSpeakerName = displayName;
-                            tvSpeakerName.setText(displayName);
-                        }
-                        
-                        // PENTING: Hapus timer hide jika ada (untuk mencegah konflik)
-                        if (bannerHideHandler != null) {
-                            bannerHideHandler.removeCallbacks(bannerHideRunnable);
-                        }
-                        
-                    } else {
-                        // SEMBUNYIKAN BANNER saat status PASSIVE/WHISPERING
-                        if (bannerActiveSpeaker != null) {
-                            bannerActiveSpeaker.setVisibility(View.GONE);
-                        }
-                        if (bannerHideHandler != null) {
-                            bannerHideHandler.removeCallbacks(bannerHideRunnable);
-                        }
+
+@Override
+public void onUserTalkStateUpdated(IUser user, boolean isTalking) {
+    try {
+        if (getActivity() != null && !isDetached()) {
+            getActivity().runOnUiThread(() -> {
+                // Tampilkan Banner saat status TALKING
+                if (isTalking) {
+                    if (bannerActiveSpeaker != null) {
+                        bannerActiveSpeaker.setVisibility(View.VISIBLE);
+                        bannerActiveSpeaker.setAlpha(1f);
                     }
+
+                    // Update Nama Speaker
+                    String displayName = user.getName();
+                    if (tvSpeakerName != null && !displayName.equals(currentSpeakerName)) {
+                        currentSpeakerName = displayName;
+                        tvSpeakerName.setText(displayName);
+                    }
+
+                    // PENTING: Hapus timer hide jika ada agar banner tetap tampil selama PTT aktif
+                    if (bannerHideHandler != null) {
+                        bannerHideHandler.removeCallbacks(bannerHideRunnable);
+                    }
+                } else {
+                    // SEMBUNYIKAN BANNER saat status PASIF / STOP TALKING
+                    if (bannerActiveSpeaker != null) {
+                        bannerActiveSpeaker.animate()
+                            .alpha(0f)
+                            .setDuration(200)
+                            .withEndAction(() -> {
+                                bannerActiveSpeaker.setVisibility(View.GONE);
+                                tvSpeakerName.setText("");
+                                currentSpeakerName = null;
+                            })
+                            .start();
+                    }
+                    
+                    // Opsional: Jalankan timer safety net jika diperlukan
+                    // if (bannerHideHandler != null) {
+                    //     bannerHideHandler.postDelayed(bannerHideRunnable, 3000);
+                    // }
                 }
-            } catch (Exception e) {
-                // Safety net agar app tidak crash
-                Log.e("PTT_Banner", "Error updating banner: " + e.getMessage());
-            }
-        });
+            });
+        }
+    } catch (Exception e) {
+        Log.e("PTT_Banner_List", "Error updating banner: " + e.getMessage());
     }
 }
-    }
-/*================*/
+
+
     private BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
