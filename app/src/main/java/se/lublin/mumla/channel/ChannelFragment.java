@@ -157,7 +157,45 @@ public class ChannelFragment extends HumlaServiceFragment implements SharedPrefe
 
         mTalkView = view.findViewById(R.id.pushtotalk_view);
         mTalkButton = (Button) view.findViewById(R.id.pushtotalk);
-        mTalkButton.setOnTouchListener(new View.OnTouchListener() {
+        
+        
+        /*========Original=====""*/
+        
+       // mTalkButton.setOnTouchListener(new View.OnTouchListener() {
+
+// GANTI setOnTouchListener DENGAN setOnClickListener UNTUK MODE TOGGLE
+mTalkButton.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        if (getService() != null) {
+            // Panggil logika toggle dari service
+            getService().onTalkKeyClick(); 
+            
+            // CEK STATUS PTT SAAT INI
+            boolean isPttActive = getService().isTalking(); // Sesuaikan nama methodnya
+            
+            if (bannerActiveSpeaker != null && getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (isPttActive) {
+                        // PTT NYALA -> TAMPILKAN BANNER
+                        bannerActiveSpeaker.setVisibility(View.VISIBLE);
+                        bannerActiveSpeaker.setAlpha(1f);
+                        
+                        // Reset timer auto-hide agar banner tetap muncul selama PTT aktif
+                        bannerHideHandler.removeCallbacks(bannerHideRunnable);
+                    } else {
+                        // PTT MATI -> SEMBUNYIKAN BANNER LANGSUNG
+                        bannerActiveSpeaker.setVisibility(View.GONE);
+                        bannerHideHandler.removeCallbacks(bannerHideRunnable);
+                    }
+                });
+            }
+        }
+    }
+});
+
+
+/*
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -176,6 +214,7 @@ public class ChannelFragment extends HumlaServiceFragment implements SharedPrefe
                 return true;
             }
         });
+        =======================*/
         mTargetPanel = view.findViewById(R.id.target_panel);
         mTargetPanelCancel = (ImageView) view.findViewById(R.id.target_panel_cancel);
         mTargetPanelCancel.setOnClickListener(new View.OnClickListener() {
