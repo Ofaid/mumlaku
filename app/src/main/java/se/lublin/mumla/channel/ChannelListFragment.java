@@ -496,4 +496,3 @@ public void onUserTalkStateUpdated(IUser user) {
         }
     }
 }
-    }}
